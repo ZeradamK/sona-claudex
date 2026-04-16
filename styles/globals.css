@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Google Sans Text";
+  src: url("/fonts/GoogleSansText-Regular.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Google Sans Text";
+  src: url("/fonts/GoogleSansText-Medium.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Google Sans Mono";
+  src: url("/fonts/GoogleSansMono-Regular.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #141416;
+  --surface-2: #1c1c1f;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #ededed;
+  --text-secondary: rgba(237, 237, 237, 0.62);
+  --text-tertiary: rgba(237, 237, 237, 0.38);
+  --accent: #c9b6ff;
+  --accent-warm: #f5c89a;
+  --font-sans: "Google Sans Text", -apple-system, system-ui, sans-serif;
+  --font-mono: "Google Sans Mono", ui-monospace, "SF Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(201, 182, 255, 0.08), transparent 32rem),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-weight: 400;
+}
+
+strong,
+b {
+  font-weight: 500;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(201, 182, 255, 0.22);
+  color: var(--text);
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 93%;
+    --card: 240 5% 8%;
+    --card-foreground: 0 0% 93%;
+    --popover: 240 5% 8%;
+    --popover-foreground: 0 0% 93%;
+    --primary: 256 100% 86%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 0 0% 93%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 0 0% 62%;
+    --accent-color: 256 100% 86%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border-color: 0 0% 100% / 0.08;
+    --input: 0 0% 100% / 0.08;
+    --ring: 256 100% 86%;
+    --radius: 8px;
+  }
+
+  body {
+    @apply antialiased;
+  }
+}
