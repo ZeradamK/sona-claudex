@@ -1,0 +1,30 @@
+# Local Postgres + pgvector for Sona development.
+#
+#   1. docker compose up -d
+#   2. add this to .env.local:
+#        DATABASE_URL="postgresql://sona:sona@127.0.0.1:5432/sona?schema=public"
+#   3. npx prisma migrate dev --name init   # creates tables + enables the vector extension
+#
+# The pgvector image ships the `vector` extension that prisma/schema.prisma
+# enables (datasource `extensions = [vector]`), so Memory.embedding works.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: sona-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sona
+      POSTGRES_PASSWORD: sona
+      POSTGRES_DB: sona
+    ports:
+      - "5432:5432"
+    volumes:
+      - sona-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sona -d sona"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sona-db-data:

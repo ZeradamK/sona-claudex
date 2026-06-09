@@ -1,40 +1,49 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
+// ─────────────────────────── Auth (NextAuth) ───────────────────────────
+
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  messages      Message[]
-  memories      Memory[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String             @id @default(cuid())
+  name              String?
+  email             String?            @unique
+  emailVerified     DateTime?
+  image             String?
+  accounts          Account[]
+  sessions          Session[]
+  households        HouseholdMember[]
+  externalProviders ExternalProvider[]
+  // Privacy / data-ownership posture (export, retention, right-to-delete).
+  privacySettings   Json?
+  dataRetentionDays Int                @default(365)
+  lastExportedAt    DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String   @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?  @db.Text
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applePrivateEmail Boolean? // is_private_email claim from Sign in with Apple
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -55,29 +64,218 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Message {
-  id             String   @id @default(cuid())
-  userId         String
-  conversationId String
-  role           String
-  content        String   @db.Text
-  metadata       Json?
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// ─────────────────────────── Household ───────────────────────────
 
-  @@index([userId, conversationId, createdAt])
+model Household {
+  id           String            @id @default(cuid())
+  name         String
+  members      HouseholdMember[]
+  profiles     Profile[]
+  devices      Device[]
+  memories     Memory[]
+  messages     Message[]
+  alarms       Alarm[]
+  notes        Note[]
+  syncEntities SyncEntity[]
+  contacts     Contact[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }
 
-model Memory {
-  id         String   @id @default(cuid())
-  userId     String
-  content    String   @db.Text
-  type       String
-  importance Float
-  embedding  Float[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model HouseholdMember {
+  id          String    @id @default(cuid())
+  userId      String
+  householdId String
+  role        String    @default("owner") // owner | adult | viewer
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
 
+  @@unique([userId, householdId])
+  @@index([householdId])
+}
+
+model Profile {
+  id               String    @id @default(cuid())
+  householdId      String
+  displayName      String
+  kind             String    @default("adult") // adult | kid
+  ageYears         Int?
+  voiceId          String? // Gemini voice name (e.g. "Sulafat")
+  voiceFingerprint Bytes? // optional embedding for diarization
+  systemPrompt     String?   @db.Text
+  toolPolicy       Json? // { allow: [...], block: [...] }
+  household        Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  memories         Memory[]
+  messages         Message[]
+  alarms           Alarm[]
+  notes            Note[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([householdId])
+}
+
+model Device {
+  id          String    @id @default(cuid())
+  householdId String
+  name        String // "Kitchen", "Office Browser"
+  kind        String // browser | macos | windows | edge-display | edge-speaker
+  fingerprint String    @unique
+  lastSeenAt  DateTime?
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([householdId])
+}
+
+// ─────────────────────────── Conversation ───────────────────────────
+
+model Message {
+  id             String    @id @default(cuid())
+  householdId    String
+  profileId      String?
+  conversationId String
+  role           String // user | assistant | system | tool
+  content        String    @db.Text
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  household      Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  profile        Profile?  @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([householdId, conversationId, createdAt])
+  @@index([profileId, createdAt])
+}
+
+// ─────────────────────────── Memory ───────────────────────────
+
+model Memory {
+  id          String                       @id @default(cuid())
+  householdId String
+  profileId   String?
+  kind        String // episodic | semantic | procedural
+  content     String                       @db.Text
+  metadata    Json?
+  importance  Float                        @default(0.5)
+  embedding   Unsupported("vector(1536)")?
+  deletedAt   DateTime? // soft-delete for the editable Memory Timeline
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+  household   Household                    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  profile     Profile?                     @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([householdId, kind])
+  @@index([householdId, profileId])
+}
+
+// ─────────────────────────── Tools ───────────────────────────
+
+model Alarm {
+  id           String    @id @default(cuid())
+  householdId  String
+  profileId    String?
+  label        String?
+  scheduledFor DateTime
+  recurrence   String? // RRULE format for repeating alarms
+  status       String    @default("scheduled") // scheduled | fired | snoozed | cancelled
+  payload      Json?
+  externalIds  Json? // { caldav: { uid, calendarId, etag } } — Apple round-trip
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  profile      Profile?  @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([householdId, scheduledFor])
+  @@index([status, scheduledFor])
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  householdId String
+  profileId   String?
+  kind        String    @default("note") // note | shopping | todo
+  content     String    @db.Text
+  done        Boolean   @default(false)
+  externalIds Json? // { caldav: { uid, listId, etag } } — Apple Reminders (VTODO)
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  profile     Profile?  @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([householdId, kind, done])
+}
+
+// ─────────────────────────── Audit & Privacy ───────────────────────────
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  householdId String
+  profileId   String? // plain field, not a relation — survives profile deletion
+  action      String // memory_edited | data_exported | account_deleted | sync_push | sync_pull | tool_called
+  details     Json?
+  createdAt   DateTime  @default(now())
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId, createdAt])
+  @@index([action, createdAt])
+}
+
+// ───────────────────── External integrations (Apple iCloud sync) ─────────────────────
+
+model ExternalProvider {
+  id                  String       @id @default(cuid())
+  userId              String // only the iCloud account owner connects it
+  type                String // caldav | carddav | musickit
+  service             String       @default("icloud") // icloud | google | outlook
+  credentialEncrypted String       @db.Text // libsodium-sealed app-specific password / token
+  credentialNonce     Bytes?
+  status              String       @default("active") // active | expired | invalid
+  lastSyncedAt        DateTime?
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  syncEntities        SyncEntity[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@unique([userId, type, service])
   @@index([userId, type])
+}
+
+model SyncEntity {
+  id                 String           @id @default(cuid())
+  householdId        String
+  externalProviderId String
+  entityType         String // event | reminder | contact
+  localId            String? // Alarm / Note / Contact id on our side
+  externalId         String // CalDAV / CardDAV UID
+  etag               String?
+  syncCursor         String?
+  status             String           @default("synced") // synced | pending_push | pending_pull | conflict
+  conflictResolution String           @default("server_wins") // server_wins | local_wins
+  lastSyncAt         DateTime?
+  household          Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  externalProvider   ExternalProvider @relation(fields: [externalProviderId], references: [id], onDelete: Cascade)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([externalProviderId, externalId])
+  @@index([householdId, entityType])
+  @@index([status, lastSyncAt])
+}
+
+model Contact {
+  id           String    @id @default(cuid())
+  householdId  String
+  firstName    String?
+  lastName     String?
+  email        String?
+  phone        String?
+  organization String?
+  externalIds  Json? // { carddav: { uid, addressBookId, etag } }
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([householdId])
+  @@index([householdId, email])
 }
