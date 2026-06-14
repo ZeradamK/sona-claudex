@@ -136,3 +136,16 @@ export default function VoiceTestPage() {
             type="button"
           >
             {voice.mode === "idle" ? (
+              <Mic className="size-7" aria-hidden="true" />
+            ) : (
+              <Square className="size-6" aria-hidden="true" />
+            )}
+          </button>
+          <span className="text-xs text-text-tertiary">
+            {active ? "Tap to end" : "Tap to talk"}
+          </span>
+        </div>
+      </section>
+    </main>
+  );
+}
