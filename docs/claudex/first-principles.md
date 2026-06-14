@@ -73,3 +73,13 @@ Claudex owns the **fleet layer only** — routing, budgets, shared memory, gover
 
 **Cost per successful task outcome across the fleet** — total token + tool spend ÷ tasks completed to a *verified-success* bar, tracked over time and attributable down to the individual agent and call. It captures every principle at once: it falls when context is budgeted (P1/P3), routing is deterministic and cheap (P2), work is deduplicated (P4), hand-offs are lean (P5), and governance prevents costly blocked/failed work (P7/P8) — and it's meaningless unless enforcement makes it attributable (P9).
 
+**Anti-gaming guardrail (non-negotiable):** **task success rate** and **policy-violation rate must not regress** while cost-per-outcome falls — otherwise you've just routed everything to the cheapest model.
+
+---
+
+## Scope
+
+**In scope:** fleet orchestration + deterministic versioned routing across heterogeneous agents/models/vendors · context engineering (deterministic retrieval, compression, dedup, per-turn budgeting, working memory) · token economy (per-agent budgets, hard cutoffs, fallback ladders, spend attribution to the call) · structured hand-offs + resumable/failover workflows · cross-agent shared memory/fact store with dedup + caching · governance enforced at routing time (data boundaries, model approvals, RBAC, secret injection, approval gates, audit, retention) · cost/outcome observability as a byproduct of enforcement · model agnosticism via one provider seam · confirmation-gated side effects.
+
+**Out of scope:** building agents / specifying what they do · prompt engineering, fine-tuning, training · token-compression algorithm research + vector-DB internals · single-agent observability/debugging as the end product (LangSmith/Langfuse — Claudex sits upstream) · competing on inference price · consumer/household/ambient hardware (that's Sona One) · edge/on-device compute (Claudex is a cloud control plane; edge agents connect in) · chat UI / CRM-ERP integrations (an agent's concern).
+
