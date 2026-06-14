@@ -52,3 +52,12 @@ export default function VoiceTestPage() {
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-bg text-text">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(6,182,212,0.11),transparent_26rem),radial-gradient(circle_at_50%_78%,rgba(107,33,168,0.12),transparent_30rem)]" />
 
+      {/* Status + latency HUD */}
+      <header className="relative z-20 flex h-16 items-center justify-between px-5 sm:px-8">
+        <div className="text-sm font-medium">Sona · voice lab</div>
+        <div className="flex items-center gap-2">
+          {voice.latencyMs !== null && (
+            <div
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface/70 px-3 py-1.5 text-sm tabular-nums text-text-secondary backdrop-blur"
+              title="Voice-to-voice round trip: you stopped talking → Sona started"
+            >
