@@ -25,3 +25,17 @@ Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only 
 
 ## 2. System architecture
 
+```
+                       ┌──────────────────────── SONA ONE (box) ────────────────────────┐
+ 4-MIC ARRAY ─PDM/I2S─▶│ XMOS XVF3800: AEC (speaker loopback = reference) + beamforming  │
+ (far-field)           │       │ clean 16 kHz mic (I2S)                                   │
+                       │       ▼                                                          │
+                       │  CM5 (BCM2712, Linux)                                            │
+                       │   • Porcupine "Hey Sona" (always-on)                             │
+                       │   • Session Manager: wake → token → WSS → stream uplink ─────────┼─┐
+                       │   • downlink audio + emotion tags ◀─────────────────────────────┼─┼┐
+                       │       │ audio                  │ state+emotion                   │ ││
+                       │       ▼                        ▼                                 │ ││
+                       │  MAX98357A → speaker     Rive Face → AMOLED                       │ ││
+                       │       └── loopback ref ──▶ XVF3800 AEC                            │ ││
+                       └─────────────────────────────────────────────────────────────────┘ ││
