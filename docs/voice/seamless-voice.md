@@ -8,3 +8,10 @@ runs in the browser).
 
 ## Architecture (no new services)
 
+```
+ mic 16kHz PCM16 ──▶ AudioWorklet ──▶ liveSession (WSS) ──▶ Gemini Live
+   (getUserMedia)     pcm16-encoder        │  ephemeral token
+                                           ▼
+ speaker 24kHz ◀── SpeakerPlayback ◀── audioOut chunks
+```
+
