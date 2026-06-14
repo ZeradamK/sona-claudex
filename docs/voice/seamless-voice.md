@@ -49,3 +49,11 @@ The spoken persona (`lib/sona/persona.ts`, `buildPersona(profile, {spoken:true})
 tells Sona to keep replies short, treat a pause as "still thinking", backchannel,
 read back numbers/times, and correct gently.
 
+## Run it in the browser (the test harness)
+
+```bash
+# .env.local needs at least GEMINI_API_KEY
+npm run dev
+# open http://localhost:3000/voice  (or whatever PORT)
+```
+
