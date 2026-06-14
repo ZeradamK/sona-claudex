@@ -43,6 +43,14 @@ export function useVoice() {
   const sessionRef = useRef<LiveSessionHandle | null>(null);
   const rafRef = useRef<number | null>(null);
 
+  // Turn bookkeeping. `newUserTurn` flips true when Sona finishes (or is cut
+  // off); the next user transcript then starts a fresh exchange instead of
+  // gluing onto the whole session. `userLastSpokeAt` + `awaitingFirstAudio`
+  // measure the voice-to-voice round trip for the latency HUD.
+  const newUserTurnRef = useRef(true);
+  const userLastSpokeAtRef = useRef(0);
+  const awaitingFirstAudioRef = useRef(false);
+
   const setMode = useCallback((next: VoiceMode) => {
     if (modeRef.current === next) return;
     modeRef.current = next;
