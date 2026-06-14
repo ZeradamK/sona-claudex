@@ -79,6 +79,9 @@ export class SpeakerPlayback {
   private analyserBuf: Float32Array<ArrayBuffer> | null = null;
   private gain: GainNode | null = null;
   private nextPlayTime = 0;
+  // Every source currently scheduled or playing. flush() stops them all for an
+  // instant barge-in, instead of only refusing to schedule *new* chunks.
+  private live = new Set<AudioBufferSourceNode>();
 
   async start() {
     this.ctx = new AudioContext({ sampleRate: SPEAKER_RATE });
