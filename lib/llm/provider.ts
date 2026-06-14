@@ -144,13 +144,7 @@ class GeminiProvider implements LLMProvider {
             outputAudioTranscription: {},
             // Server-side VAD owns all turn-taking; the client just streams.
             realtimeInputConfig: {
-              automaticActivityDetection: {
-                disabled: false,
-                startOfSpeechSensitivity: "START_SENSITIVITY_HIGH",
-                endOfSpeechSensitivity: "END_SENSITIVITY_HIGH",
-                prefixPaddingMs: 200,
-                silenceDurationMs: 600
-              }
+              automaticActivityDetection: VAD_CONFIG
             }
           }
         }
