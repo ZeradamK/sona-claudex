@@ -95,3 +95,20 @@ Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only 
 
 The existing schema already fits: `Device` has `kind` (`edge-display`/`edge-speaker`), unique `fingerprint`, `householdId`, `lastSeenAt`; `app/api/voice/token` already mints Gemini Live ephemeral tokens server-side. New endpoints:
 
+1. **`POST /api/device/provision`** — SoftAP/captive-portal onboarding: WiFi + a household claim code → create `Device` row (reuse `fingerprint` unique constraint) → return `{ deviceId, deviceSecret }` (secret hashed at rest; HMAC/mTLS thereafter).
+2. **`POST /api/device/token`** — *load-bearing.* Refactor `/api/voice/token` into a shared service; auth by `deviceSecret`; read household memory (gemini-embedding-001) + active profiles → build a device-scoped system prompt → mint a single-use Gemini Live token. Return `{ type: "gemini_direct", token, model, voiceConfig, systemPrompt }` so a future LiveKit pivot is `{ type: "livekit", room, token }` with **zero firmware change**. Update `lastSeenAt`.
+3. **`POST /api/device/telemetry`** — 60 s heartbeat; **health only, no audio/transcripts/PII** (uptime, RSSI, latency pct, wake false-reject, AEC SNR, errors). Drives a fleet dashboard.
+4. **`GET /api/ota/manifest`** — signed Mender artifact (S3) + version + hash; canary 10→25→50→100%; A/B + atomic rollback on failed boot.
+5. **`POST /api/device/claim-turn`** — multi-device arbitration: boxes submit wake-confidence within 200 ms; server picks the highest, suppresses others 2 s. Cloud-assisted, no LAN coordination.
+
+Box = stateless + interchangeable; memory/conversation live in `Household`/`Message`/`Memory`. Factory reset = delete the `Device` row + re-provision.
+
+---
+
+## 6. Build plan / phasing
+
+- **Phase 0 — First-light (wks 1–6).** *Proves the loop is real.* CM5 on the official IO board (or Pi 5) + **ReSpeaker XVF3800 USB array** + MAX98357A breakout + AMOLED dev board + 3D-printed shell; Pi OS Lite; app reuses the web monorepo; Porcupine + Rive + direct Gemini Live via `/api/device/token`. **Weeks 1–3 are the critical-path Rive-on-VC4 validation (see §7).** Success: wake→syllable <1 s; user can interrupt mid-sentence and be understood.
+- **Phase 1 — EVT (wks 7–16).** First custom carrier PCB with **XVF3800 + 4 PDM mics on-board**, QSPI AMOLED, eMMC, power tree, LED ring, touch. Yocto + Mender A/B OTA + provisioning/telemetry endpoints live. Success: on-board AEC matches USB module; OTA + rollback work; thermals OK at 28 °C. 5–10 hand-built units.
+- **Phase 2 — DVT (wks 17–28).** Injection-mold base + aluminum top ring; acoustic-chamber tuning; AMOLED burn-in stack (pixel-shift, ~70% idle brightness, off-white palette); **FCC Part 15B + CE/RED** pre-compliance reusing CM5's pre-certified radio + pre-certified PSU (~$8–15k, 8–12 wks, parallelize with tooling). Success: ≥85% yield on a 500-unit pilot, BOM holding.
+- **Phase 3 — Production (mo 7–9+).** Volume CM build, factory ATE (per-unit audio calibration), signed-firmware chain, fleet dashboard, canary OTA, retail packaging. **$199.**
+
