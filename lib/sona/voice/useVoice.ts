@@ -136,10 +136,13 @@ export function useVoice() {
   const start = useCallback(async () => {
     if (activeRef.current || modeRef.current !== "idle") return;
 
+    newUserTurnRef.current = true;
+    awaitingFirstAudioRef.current = false;
     setState((s) => ({
       ...s,
       error: null,
-      transcript: { user: "", assistant: "" }
+      transcript: { user: "", assistant: "" },
+      latencyMs: null
     }));
     setMode("connecting");
 
