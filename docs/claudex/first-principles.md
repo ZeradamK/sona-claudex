@@ -43,3 +43,15 @@ Routing is a composition of explicit, **versioned rules** over capability, cost 
 Per-agent turn/day/month budgets are **hard limits** with a declared fallback ladder (downshift to a cheaper model, escalate to a human, or refuse). Soft caps warn; hard caps **halt execution before the offending call fires.**
 **Teeth:** must block a tool/LLM call that would breach the turn budget *before* it fires, not bill it and flag it after; refuses to deploy an agent with no budget; a dashboard that estimates savings but can't gate execution violates this.
 
+### P4 — Pay for work once
+Identical calls on identical inputs within a task window return cached results; overlapping context is unified in a **shared fact store** keyed by `<task-id, query-hash>`; post-task summaries are shared so sibling agents don't re-derive known facts.
+**Teeth:** forbids running the same LLM call twice on the same inputs inside a task window; requires surfacing "Agent A and Agent B both queried doc X" as a flagged, billable-waste event.
+
+### P5 — Hand off a memo, not a transcript
+Agents hand off via **structured artifacts** (decision, constraints, working memory, next steps, remaining budget) plus top-K shared memories. Context is **portable**: no agent-specific internal state lives in shared memory, so any agent can resume another's queue.
+**Teeth:** passing the next agent a transcript (or transcript + summary) is a bug; agent-to-agent "summarize what just happened" LLM calls are forbidden; memory labeled with one agent's private internal state is forbidden; hand-off + portable-context schemas must be declared upfront.
+
+### P6 — The provider is a seam
+All model access goes through **one provider interface** (stream / complete / embed / token-count / cost). No vendor SDK calls, no provider-specific tool-call formats, and no model names outside that seam. Adding a provider means implementing the interface and nothing else.
+**Teeth:** a grep for direct vendor SDK calls outside the provider module must return zero; an agent prompt or routing rule that hard-references "Claude"/"GPT"/"Gemini" violates this; a new provider that requires touching core routing or agent code violates this.
+
