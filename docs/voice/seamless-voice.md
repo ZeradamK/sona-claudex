@@ -75,3 +75,8 @@ chromium-browser --kiosk \
   http://<sona-host>/voice
 ```
 
+Everything that matters is browser-standard and runs identically on Chromium-on-ARM:
+`getUserMedia` 16kHz capture, the AudioWorklet PCM encoder, the `SpeakerPlayback`
+Web Audio queue, and the WSS to Gemini. The Pi just supplies a USB/I²S mic and a
+speaker; the same `/api/voice/token` backend keeps the key off the device.
+
