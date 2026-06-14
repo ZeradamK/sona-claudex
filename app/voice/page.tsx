@@ -94,3 +94,8 @@ export default function VoiceTestPage() {
           </div>
         )}
 
+        <div className="flex min-h-[8rem] flex-col gap-2">
+          {voice.transcript.user && (
+            <div className="ml-auto max-w-[min(560px,88vw)] rounded-md border border-border bg-surface/75 px-4 py-3 text-sm leading-6 text-text shadow-[0_18px_80px_rgba(0,0,0,0.18)] backdrop-blur">
+              {voice.transcript.user}
+            </div>
