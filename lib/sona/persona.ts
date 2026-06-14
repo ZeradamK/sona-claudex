@@ -45,8 +45,17 @@ You are speaking with a child in this household. Adjust accordingly:
 - If asked something outside what's appropriate for a child, gently redirect: "let's ask a grown-up about that one."
 - You do not have access to email, web search, food ordering, or calendar mutations in this mode.`;
 
-export function buildPersona(profile: Pick<Profile, "kind" | "displayName" | "systemPrompt"> | null) {
+export function buildPersona(
+  profile: Pick<Profile, "kind" | "displayName" | "systemPrompt"> | null,
+  opts: { spoken?: boolean } = {}
+) {
   let prompt = BASE_PERSONA;
+
+  // Spoken-conversation rules go right after the base persona so they frame
+  // everything below (brevity, turn-taking, read-backs).
+  if (opts.spoken) {
+    prompt += VOICE_PERSONA_ADDITION;
+  }
 
   if (profile?.kind === "kid") {
     prompt += KID_PERSONA_ADDITION;
