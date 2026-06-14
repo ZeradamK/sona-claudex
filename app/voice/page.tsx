@@ -99,3 +99,18 @@ export default function VoiceTestPage() {
             <div className="ml-auto max-w-[min(560px,88vw)] rounded-md border border-border bg-surface/75 px-4 py-3 text-sm leading-6 text-text shadow-[0_18px_80px_rgba(0,0,0,0.18)] backdrop-blur">
               {voice.transcript.user}
             </div>
+          )}
+          {voice.transcript.assistant && (
+            <div className="mr-auto max-w-[min(560px,88vw)] rounded-md border border-border bg-surface-2/70 px-4 py-3 text-sm leading-6 text-text shadow-[0_18px_80px_rgba(0,0,0,0.18)] backdrop-blur">
+              {voice.transcript.assistant}
+            </div>
+          )}
+          {!voice.transcript.user && !voice.transcript.assistant && (
+            <p className="my-auto text-center text-sm text-text-tertiary">
+              {active
+                ? "Listening — talk freely. Pause to think; Sona won't cut you off."
+                : "Tap the button and just talk. Interrupt any time."}
+            </p>
+          )}
+        </div>
+
