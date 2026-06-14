@@ -57,3 +57,11 @@ npm run dev
 # open http://localhost:3000/voice  (or whatever PORT)
 ```
 
+`app/voice/page.tsx` is the stripped harness: the particle sphere, one talk
+button, the live transcript, and a **latency HUD** (voice-to-voice round trip:
+you stopped talking → Sona started). Tap, talk, pause mid-sentence, interrupt
+her — verify she waits for you and stops instantly when you cut in. Watch the ms
+chip; ~250–700ms voice-to-voice is the target.
+
+## Run it on a Raspberry Pi (kiosk)
+
