@@ -15,3 +15,14 @@ runs in the browser).
  speaker 24kHz ◀── SpeakerPlayback ◀── audioOut chunks
 ```
 
+- **Native-audio dialog model** — `gemini-2.5-flash-native-audio-preview-12-2025`.
+  The model itself hears and speaks, so pauses, tone, and backchannels survive.
+  (The half-cascade `*-live` variants lose paralinguistics — don't use them here.)
+- **Server-side VAD owns turn-taking.** The client streams mic audio continuously
+  and never sends an end-of-speech signal; Gemini decides when you're done and
+  when you're barging in.
+- **Ephemeral token security.** The long-lived `GEMINI_API_KEY` never reaches the
+  browser (or the Pi). `/api/voice/token` mints a single-use token with the
+  persona, voice, and VAD config baked in, so the client can't tamper with
+  Sona's behaviour.
+
