@@ -114,3 +114,13 @@ export default function VoiceTestPage() {
           )}
         </div>
 
+        <div className="flex flex-col items-center gap-3">
+          <button
+            aria-label={active ? "End conversation" : "Start talking"}
+            className={cn(
+              "grid size-20 place-items-center rounded-full border transition-colors",
+              voice.mode === "idle" &&
+                "border-border bg-surface/80 text-text hover:bg-surface-2",
+              voice.mode === "connecting" &&
+                "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
+              voice.mode === "listening" &&
