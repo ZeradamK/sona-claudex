@@ -41,3 +41,11 @@ Tune live (no redeploy) via env: `SONA_VAD_END_SENSITIVITY`, `SONA_VAD_SILENCE_M
 `SONA_VAD_START_SENSITIVITY`, `SONA_VAD_PREFIX_PADDING_MS`. In a noisy kitchen,
 raise `SONA_VAD_SILENCE_MS` (e.g. 800–900).
 
+Barge-in is automatic: when you talk over Sona, the server emits `interrupted`,
+and `SpeakerPlayback.flush()` stops every live audio source within ~1 frame
+(`lib/sona/voice/audio.ts`).
+
+The spoken persona (`lib/sona/persona.ts`, `buildPersona(profile, {spoken:true})`)
+tells Sona to keep replies short, treat a pause as "still thinking", backchannel,
+read back numbers/times, and correct gently.
+
