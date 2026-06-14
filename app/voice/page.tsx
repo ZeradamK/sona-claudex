@@ -124,3 +124,15 @@ export default function VoiceTestPage() {
               voice.mode === "connecting" &&
                 "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
               voice.mode === "listening" &&
+                "border-cyan-300/40 bg-cyan-300/10 text-cyan-200",
+              voice.mode === "thinking" &&
+                "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
+              voice.mode === "speaking" &&
+                "border-accent/40 bg-accent/10 text-accent"
+            )}
+            onClick={() => {
+              void voice.toggle();
+            }}
+            type="button"
+          >
+            {voice.mode === "idle" ? (
