@@ -278,6 +278,7 @@ export function useVoice() {
     audioLevel: state.audioLevel,
     error: state.error,
     transcript: state.transcript,
+    latencyMs: state.latencyMs,
     start,
     stop,
     toggle
