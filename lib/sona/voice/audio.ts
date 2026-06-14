@@ -139,12 +139,24 @@ export class SpeakerPlayback {
     return Math.min(1, Math.sqrt(sum / this.analyserBuf.length) * 3);
   }
 
+  /** Barge-in: silence everything already playing AND stop scheduling. */
   flush() {
+    for (const src of this.live) {
+      try {
+        src.onended = null;
+        src.stop();
+        src.disconnect();
+      } catch {
+        // already stopped / ended
+      }
+    }
+    this.live.clear();
     if (this.ctx) this.nextPlayTime = this.ctx.currentTime;
   }
 
   async stop() {
     try {
+      this.flush();
       this.gain?.disconnect();
       this.analyser?.disconnect();
       await this.ctx?.close();
