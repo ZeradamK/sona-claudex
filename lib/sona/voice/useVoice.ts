@@ -210,10 +210,15 @@ export function useVoice() {
               }));
               break;
             case "interrupted":
+              // Barge-in: stop Sona's audio and treat what comes next as a
+              // fresh user turn.
               speakerRef.current?.flush();
+              newUserTurnRef.current = true;
               break;
             case "turnComplete":
-              // No-op. Amplitude pump derives the next mode.
+              // Sona finished her turn; the next user transcript begins a new
+              // exchange. Amplitude pump still derives mode.
+              newUserTurnRef.current = true;
               break;
             case "error":
               setState((s) => ({ ...s, error: event.message }));
