@@ -81,3 +81,16 @@ export default function VoiceTestPage() {
         </div>
       </header>
 
+      {/* Sphere */}
+      <div className="pointer-events-none relative z-10 mx-auto mt-2 h-[44vh] max-h-[420px] w-full max-w-[420px]">
+        <SphereScene active={active} audioLevel={voice.audioLevel} mode={sphereMode} />
+      </div>
+
+      {/* Transcript + controls */}
+      <section className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-end gap-4 px-5 pb-10 sm:px-8">
+        {banner && (
+          <div className="mx-auto w-full rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            {banner}
+          </div>
+        )}
+
