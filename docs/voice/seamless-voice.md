@@ -80,3 +80,12 @@ Everything that matters is browser-standard and runs identically on Chromium-on-
 Web Audio queue, and the WSS to Gemini. The Pi just supplies a USB/I²S mic and a
 speaker; the same `/api/voice/token` backend keeps the key off the device.
 
+Verify two Pi-specific things on the **target network** before deploying:
+1. Kiosk Chromium has mic permission and autoplay (the flags above handle both;
+   `--use-fake-ui-for-media-stream` auto-accepts the mic prompt — drop it if you
+   want a real prompt).
+2. The Pi's WiFi holds a persistent WebSocket under continuous 16kHz upstream
+   audio — that's the one real difference from a dev laptop.
+
+## Later (not needed for testing)
+
