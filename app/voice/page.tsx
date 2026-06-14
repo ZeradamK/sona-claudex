@@ -38,3 +38,17 @@ export default function VoiceTestPage() {
   const active = voice.mode !== "idle";
   const sphereMode = VOICE_TO_SPHERE[voice.mode];
 
+  const banner = voice.error
+    ? voice.error === "gemini_api_key_missing"
+      ? "Add GEMINI_API_KEY to .env.local and restart the dev server."
+      : voice.error.includes("getUserMedia") ||
+          voice.error.includes("Permission") ||
+          voice.error.includes("not-allowed")
+        ? "Mic permission needed. Allow it in your browser, then try again."
+        : `Voice failed: ${voice.error}`
+    : null;
+
+  return (
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-bg text-text">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(6,182,212,0.11),transparent_26rem),radial-gradient(circle_at_50%_78%,rgba(107,33,168,0.12),transparent_30rem)]" />
+
