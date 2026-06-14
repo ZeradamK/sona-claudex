@@ -169,16 +169,36 @@ export function useVoice() {
         onEvent: (event) => {
           switch (event.type) {
             case "audioOut":
+              if (awaitingFirstAudioRef.current) {
+                awaitingFirstAudioRef.current = false;
+                const ms = performance.now() - userLastSpokeAtRef.current;
+                // Only report plausible round trips (ignore the very first
+                // chunk of a session, before the user has spoken).
+                if (ms > 0 && ms < 10000) {
+                  setState((s) => ({ ...s, latencyMs: Math.round(ms) }));
+                }
+              }
               speakerRef.current?.enqueue(event.pcm);
               break;
             case "inputTranscript":
-              setState((s) => ({
-                ...s,
-                transcript: {
-                  ...s.transcript,
-                  user: s.transcript.user + event.text
+              setState((s) => {
+                // New user turn → start a clean exchange instead of appending
+                // to the whole session's worth of text.
+                if (newUserTurnRef.current) {
+                  newUserTurnRef.current = false;
+                  return {
+                    ...s,
+                    transcript: { user: event.text, assistant: "" }
+                  };
                 }
-              }));
+                return {
+                  ...s,
+                  transcript: {
+                    ...s.transcript,
+                    user: s.transcript.user + event.text
+                  }
+                };
+              });
               break;
             case "outputTranscript":
               setState((s) => ({
