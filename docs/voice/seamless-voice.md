@@ -26,3 +26,14 @@ runs in the browser).
   persona, voice, and VAD config baked in, so the client can't tamper with
   Sona's behaviour.
 
+## The turn-taking tuning (this is the whole game)
+
+`lib/llm/provider.ts` → `VAD_CONFIG`, all env-overridable:
+
+| Param | Value | Why |
+|---|---|---|
+| `startOfSpeechSensitivity` | `START_SENSITIVITY_HIGH` | notice you instantly → snappy barge-in |
+| `endOfSpeechSensitivity` | `END_SENSITIVITY_LOW` | **be patient deciding you're done** — the #1 "don't cut me off" lever |
+| `silenceDurationMs` | `700` | trailing silence before Sona takes the turn (600–800 = natural) |
+| `prefixPaddingMs` | `300` | keep audio before speech onset so the first syllable isn't clipped |
+
