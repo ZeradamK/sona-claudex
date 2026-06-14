@@ -65,3 +65,13 @@ chip; ~250–700ms voice-to-voice is the target.
 
 ## Run it on a Raspberry Pi (kiosk)
 
+The Pi runs the **exact same** Next.js app — nothing Pi-specific in the code.
+Point a kiosk Chromium at the `/voice` route of your Sona host:
+
+```bash
+chromium-browser --kiosk \
+  --autoplay-policy=no-user-gesture-required \
+  --use-fake-ui-for-media-stream \
+  http://<sona-host>/voice
+```
+
