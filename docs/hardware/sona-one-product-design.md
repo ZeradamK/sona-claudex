@@ -54,3 +54,17 @@ Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only 
 
 **Barge-in is split correctly:** *acoustic* echo cancellation (don't hear ourselves) = **XVF3800 hardware**, using speaker output as the AEC reference. *Conversational* turn-taking (user intends to interrupt) = **Gemini Live server-side VAD**. Both are required; neither alone suffices.
 
+---
+
+## 3. The conversational experience: <1 s wake-to-response + barge-in
+
+**Latency budget (wake-end → first audible syllable), broadband: ~600–800 ms** (critic measured 450–650 ms optimistic). The key trick is **speculative connection pre-warming**: Porcupine crosses ~90% confidence partway through "…Sona," so the token mint + TLS + WSS handshake (~300 ms) overlap with the user *starting to speak their request* — Gemini already has a warm session by the time request audio flows.
+
+**Barge-in path:** Sona speaks → speaker signal fed back as XVF3800 AEC reference → uplinked mic stream is echo-free → when the user talks over Sona, Gemini's native VAD detects it, truncates output, starts listening; box stops playback. Target interrupt latency **<300 ms**. Without hardware AEC, this fires constantly on Sona's own voice — *which is exactly why the XVF3800 is non-negotiable.*
+
+**Fallbacks:** capacitive touch-to-talk bypasses wake-word (noisy rooms / false-rejects); cloud-unreachable → "no connection" face + chime (no offline LLM in v1).
+
+---
+
+## 4. Bill of Materials (corrected with integration-critic sourcing reality)
+
