@@ -25,3 +25,16 @@ const VOICE_TO_SPHERE: Record<VoiceMode, SphereMode> = {
   speaking: "speaking"
 };
 
+const VOICE_TO_LABEL: Record<VoiceMode, string> = {
+  idle: "Idle",
+  connecting: "Connecting…",
+  listening: "Listening",
+  thinking: "Thinking",
+  speaking: "Speaking"
+};
+
+export default function VoiceTestPage() {
+  const voice = useVoice();
+  const active = voice.mode !== "idle";
+  const sphereMode = VOICE_TO_SPHERE[voice.mode];
+
