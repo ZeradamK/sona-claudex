@@ -83,3 +83,13 @@ Claudex owns the **fleet layer only** — routing, budgets, shared memory, gover
 
 **Out of scope:** building agents / specifying what they do · prompt engineering, fine-tuning, training · token-compression algorithm research + vector-DB internals · single-agent observability/debugging as the end product (LangSmith/Langfuse — Claudex sits upstream) · competing on inference price · consumer/household/ambient hardware (that's Sona One) · edge/on-device compute (Claudex is a cloud control plane; edge agents connect in) · chat UI / CRM-ERP integrations (an agent's concern).
 
+---
+
+## Open decisions for the founder
+
+1. ~~Model-agnostic vs Claude-centric~~ — **DECIDED 2026-06-12: (b) "Claude-first, not Claude-only."** Opinionated Claude defaults, seam stays open (see Positioning stance above).
+2. **Budget × confirmation collision:** when a hard budget halt (P3) and a mandatory confirmation gate (P8) both fire mid-task, what's the canonical resolution order? Specify the fallback ladder before it strands a production workflow.
+3. **The "verified-success" bar** in the north-star metric — who defines it per task type? It's ungameable only if success isn't self-reported by the agent being measured.
+4. **Interception point:** is Claudex a proxy/gateway in front of model APIs, an SDK agents import, or a sidecar? This decides whether P6 (seam) and P7 (gate-before-assembly) are even enforceable against black-box third-party agents.
+5. **Build-vs-buy seam with LangGraph/CrewAI/LangSmith/Langfuse** — exactly where Claudex stays upstream rather than redundant.
+6. **Brand:** does "sona-Claudex" lead with the Sona heritage or bury it for enterprise credibility?
