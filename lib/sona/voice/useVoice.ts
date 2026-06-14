@@ -101,6 +101,11 @@ export function useVoice() {
       } else if (micLvl > MIC_TRIGGER) {
         nextMode = "listening";
         displayLvl = micLvl;
+        // User is audibly talking right now. Keep stamping "last spoke" and
+        // arm the next reply for measurement — the gap from the final stamp to
+        // Sona's first audio chunk is the round trip we report.
+        userLastSpokeAtRef.current = performance.now();
+        awaitingFirstAudioRef.current = true;
       } else {
         nextMode = "thinking";
         displayLvl = 0;
