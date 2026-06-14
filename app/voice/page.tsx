@@ -61,3 +61,23 @@ export default function VoiceTestPage() {
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface/70 px-3 py-1.5 text-sm tabular-nums text-text-secondary backdrop-blur"
               title="Voice-to-voice round trip: you stopped talking → Sona started"
             >
+              <span className="text-text-tertiary">↻</span>
+              {voice.latencyMs} ms
+            </div>
+          )}
+          <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface/70 px-3 py-1.5 text-sm text-text-secondary backdrop-blur">
+            <span
+              className={cn(
+                "size-2 rounded-full transition-colors",
+                sphereMode === "listening" && "bg-cyan-300",
+                sphereMode === "thinking" && "bg-accent-warm",
+                sphereMode === "speaking" && "bg-accent",
+                sphereMode === "idle" && "bg-text-tertiary",
+                banner && "bg-red-400"
+              )}
+            />
+            {banner ? "Error" : VOICE_TO_LABEL[voice.mode]}
+          </div>
+        </div>
+      </header>
+
