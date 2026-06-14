@@ -31,3 +31,15 @@ Claudex does **not** build agents, write prompts, fine-tune, or compete on infer
 
 Each is written so a team can point at a design decision and say *"that violates principle N."* The **teeth** are the test.
 
+### P1 — Context is a contract
+Every agent declares a per-turn **token budget**; Claudex assembles context to fit it via deterministic retrieval (hybrid vector + recency + importance). Context is granted against a stated need, never replayed wholesale.
+**Teeth:** forbids append-only chat-history replay as the context source; rejects deploying an agent that hasn't declared a turn budget; forbids a context window where >50% of tokens come from turns older than *K*.
+
+### P2 — Routing is a rule, not a vibe
+Routing is a composition of explicit, **versioned rules** over capability, cost ceiling, context-fit, and load. Model-driven choice is a last-resort, heavily-observed fallback, and recurring high-confidence model decisions get **promoted into deterministic rules** over time. Agents are addressed by capability + cost profile, never by name.
+**Teeth:** forbids routing that defaults to "ask an LLM which agent should handle this"; hard-coded agent names in routing rules are a bug; requires >90% of routing decisions to be deterministic and tagged as such, with the cost/latency delta between deterministic and model paths tracked.
+
+### P3 — Budgets stop, they don't warn
+Per-agent turn/day/month budgets are **hard limits** with a declared fallback ladder (downshift to a cheaper model, escalate to a human, or refuse). Soft caps warn; hard caps **halt execution before the offending call fires.**
+**Teeth:** must block a tool/LLM call that would breach the turn budget *before* it fires, not bill it and flag it after; refuses to deploy an agent with no budget; a dashboard that estimates savings but can't gate execution violates this.
+
