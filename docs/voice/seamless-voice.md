@@ -37,3 +37,7 @@ runs in the browser).
 | `silenceDurationMs` | `700` | trailing silence before Sona takes the turn (600–800 = natural) |
 | `prefixPaddingMs` | `300` | keep audio before speech onset so the first syllable isn't clipped |
 
+Tune live (no redeploy) via env: `SONA_VAD_END_SENSITIVITY`, `SONA_VAD_SILENCE_MS`,
+`SONA_VAD_START_SENSITIVITY`, `SONA_VAD_PREFIX_PADDING_MS`. In a noisy kitchen,
+raise `SONA_VAD_SILENCE_MS` (e.g. 800–900).
+
