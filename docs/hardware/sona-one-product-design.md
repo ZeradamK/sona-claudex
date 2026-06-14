@@ -68,3 +68,22 @@ Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only 
 
 ## 4. Bill of Materials (corrected with integration-critic sourcing reality)
 
+| # | Part | Role | Proto $ | Vol (10k) $ |
+|---|---|---|---|---|
+| 1 | CM5 Lite 2 GB wireless (BCM2712) | Compute, WiFi 6E/BLE, Rive, Porcupine | 45 | 38 |
+| 2 | XMOS XVF3800 (via ReSpeaker module) + 4× Knowles PDM mics | HW AEC + beamforming + far-field array | 50 (USB module) | 24 |
+| 3 | 1.43″ round AMOLED 466×466 QSPI (RM67162/CO5300) | Animated face | 22 | 18 |
+| 4 | MAX98357A Class-D amp (I2S) | Speaker driver | 3 | 1.5 |
+| 5 | 45 mm full-range driver, 4 Ω, voice-tuned | Playback (300 Hz–8 kHz clarity) | 6 | 4 |
+| 6 | 16 GB eMMC | OS A/B + OTA staging | — (microSD proto) | 4 |
+| 7 | Custom 4-layer carrier PCB ~70×70 mm | CM5 + I2S + QSPI + power + mics | — (dev board) | 6 |
+| 8 | 5 V/3 A power tree + USB-C + protection | Power (3.3 V/1.8 V rails) | 4 | 3 |
+| 9 | Capacitive touch (PTT + hardware mic-mute) | Wake fallback + privacy | 2 | 1.5 |
+| 10 | RGB LED ring (4–6) | Listening/thinking/mute indication | 2 | 1.5 |
+| 11 | Enclosure (aluminum top ring + molded PC base + acoustic foam) | Premium feel, RF, acoustics | 15 (3D-print) | 9 |
+| 12 | Porcupine "Hey Sona" license | On-device wake word | 1.50 | 0.30 |
+| 13 | Connectors / passives / harness | Glue | 3 | 2.5 |
+| | **BOM subtotal** | | **~$160 proto** | **~$118 @ 10k** |
+| | + assembly/test (vol) | | | ~$10 |
+| | **Landed unit (vol)** | | | **~$128** |
+
