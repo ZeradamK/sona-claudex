@@ -28,7 +28,7 @@ export async function POST() {
     }
   }
 
-  const persona = buildPersona(profile);
+  const persona = buildPersona(profile, { spoken: true });
   const voiceName = profile?.voiceId ?? DEFAULT_VOICE;
 
   try {
