@@ -55,3 +55,11 @@ Agents hand off via **structured artifacts** (decision, constraints, working mem
 All model access goes through **one provider interface** (stream / complete / embed / token-count / cost). No vendor SDK calls, no provider-specific tool-call formats, and no model names outside that seam. Adding a provider means implementing the interface and nothing else.
 **Teeth:** a grep for direct vendor SDK calls outside the provider module must return zero; an agent prompt or routing rule that hard-references "Claude"/"GPT"/"Gemini" violates this; a new provider that requires touching core routing or agent code violates this.
 
+### P7 — Policy gates the route, it doesn't narrate it
+Policy (data boundaries, model approvals, RBAC, secret injection, high-cost approval gates) constrains the route **before** the prompt is assembled. A blocked decision fails loudly with an audit event; it never silently proceeds.
+**Teeth:** must reject an agent for a payload that breaches a data policy before prompt assembly; advisory-only policies violate this; secret injection handled outside the orchestrator violates this; a blocked route that proceeds anyway and is merely logged violates this.
+
+### P8 — Confirm anything that touches money, identity, or others
+Any tool call that moves money, asserts identity, or contacts a third party requires **explicit approval** (human or policy-gated) with a read-back before execution and a rollback on no/timeout. The agent does not get to decide whether to ask.
+**Teeth:** "I'll ask only if my confidence is below X" violates this — the agent must not self-grant; a money/message/third-party call with no confirmation gate is a bug; a side effect that can't be rolled back on timeout must not be auto-issued.
+
