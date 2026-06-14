@@ -54,6 +54,33 @@ export interface LLMProvider {
 const VOICE_TOKEN_LIFETIME_MS = 30 * 60 * 1000; // 30 min absolute
 const VOICE_SESSION_START_WINDOW_MS = 60 * 1000; // 60 s to open the WS
 
+/**
+ * Server-side VAD tuning — this block IS turn-taking quality.
+ *
+ *  - START_SENSITIVITY_HIGH  → notice the user the instant they speak, so
+ *    barge-in over Sona is snappy.
+ *  - END_SENSITIVITY_LOW     → be PATIENT about deciding the user is done.
+ *    The HIGH/600ms default cuts people off mid-thought; LOW + a longer
+ *    silence window lets them breathe, pause, and gather a sentence.
+ *  - silenceDurationMs 700   → ms of trailing silence before Sona takes the
+ *    turn. Higher = fewer interruptions, slightly more latency. 600–800 is the
+ *    natural-conversation sweet spot.
+ *  - prefixPaddingMs 300     → audio kept before speech onset so the first
+ *    syllable is never clipped.
+ *
+ * All env-overridable so we can tune on real hardware (e.g. a noisy kitchen
+ * Pi) without a redeploy.
+ */
+const VAD_CONFIG = {
+  disabled: false,
+  startOfSpeechSensitivity:
+    process.env.SONA_VAD_START_SENSITIVITY ?? "START_SENSITIVITY_HIGH",
+  endOfSpeechSensitivity:
+    process.env.SONA_VAD_END_SENSITIVITY ?? "END_SENSITIVITY_LOW",
+  prefixPaddingMs: Number(process.env.SONA_VAD_PREFIX_PADDING_MS ?? 300),
+  silenceDurationMs: Number(process.env.SONA_VAD_SILENCE_MS ?? 700)
+} as const;
+
 class GeminiProvider implements LLMProvider {
   readonly id = "gemini";
 
