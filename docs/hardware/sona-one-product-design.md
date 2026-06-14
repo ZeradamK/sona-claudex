@@ -39,3 +39,18 @@ Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only 
                        │  MAX98357A → speaker     Rive Face → AMOLED                       │ ││
                        │       └── loopback ref ──▶ XVF3800 AEC                            │ ││
                        └─────────────────────────────────────────────────────────────────┘ ││
+   ┌──────────────────────── SONA CLOUD (Next.js + Postgres/Prisma) ──────────────────────┐ ││
+   │  POST /api/device/provision  → claim box into Household (fingerprint = Device row)    │ ││
+   │  POST /api/device/token      → mint single-use Gemini Live token + device prompt + mem│◀┘│
+   │  POST /api/device/telemetry  → health only (no audio/PII): latency, SNR, RSSI, errors │  │
+   │  GET  /api/ota/manifest      → signed Mender artifact URL + version + hash             │  │
+   └──────────────────────────────────────────────────────────────────────────────────────┘  │
+   ┌──────────────────────── GOOGLE — Gemini Live (native-audio dialog) ──────────────────┐   │
+   │  server-side VAD → turn-taking + barge-in;  native audio out (voice = personality)    │───┘
+   └───────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**The box never holds the Gemini API key.** On each wake it asks Sona's backend for a *single-use* token (exactly like the browser does today), then streams media **directly** to Gemini for lowest latency. Only token-mint, telemetry, and OTA touch Sona's backend → preserves the thin-client thesis and adds **zero per-minute SFU cost**.
+
+**Barge-in is split correctly:** *acoustic* echo cancellation (don't hear ourselves) = **XVF3800 hardware**, using speaker output as the AEC reference. *Conversational* turn-taking (user intends to interrupt) = **Gemini Live server-side VAD**. Both are required; neither alone suffices.
+
