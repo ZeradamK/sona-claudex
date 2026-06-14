@@ -89,3 +89,9 @@ Verify two Pi-specific things on the **target network** before deploying:
 
 ## Later (not needed for testing)
 
+- **Session resumption** for >15-min conversations: pass `sessionResumption: {}`
+  in the mint config, capture `SessionResumptionUpdate.newHandle` in
+  `liveSession.ts onmessage`, and on `close`/drop re-mint + reconnect with the
+  saved handle (context survives, no full restart).
+- **Backpressure**: cap the queue if `SpeakerPlayback.remaining()` grows on a
+  slow device.
