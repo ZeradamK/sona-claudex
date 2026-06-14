@@ -63,3 +63,13 @@ Policy (data boundaries, model approvals, RBAC, secret injection, high-cost appr
 Any tool call that moves money, asserts identity, or contacts a third party requires **explicit approval** (human or policy-gated) with a read-back before execution and a rollback on no/timeout. The agent does not get to decide whether to ask.
 **Teeth:** "I'll ask only if my confidence is below X" violates this — the agent must not self-grant; a money/message/third-party call with no confirmation gate is a bug; a side effect that can't be rolled back on timeout must not be auto-issued.
 
+### P9 — Claudex wraps the fleet; it is not the fleet
+Claudex owns the **fleet layer only** — routing, budgets, shared memory, governance, and the cost/outcome observability that falls out of enforcing them. It ships no agents, optimizes no prompts, fine-tunes nothing, and never competes on inference price. **Observability is the exhaust of enforcement, not a separate product.**
+**Teeth:** shipping a pre-built agent violates this; taking a position on prompt design or fine-tuning violates this; assuming all agents share one model violates this; an agent that can't emit structured cost/outcome metadata down to the individual call cannot deploy, and a deployment that can't answer "if this agent gets 10% more traffic, what's the cost delta?" in seconds is blocked.
+
+---
+
+## North-star metric
+
+**Cost per successful task outcome across the fleet** — total token + tool spend ÷ tasks completed to a *verified-success* bar, tracked over time and attributable down to the individual agent and call. It captures every principle at once: it falls when context is budgeted (P1/P3), routing is deterministic and cheap (P2), work is deduplicated (P4), hand-offs are lean (P5), and governance prevents costly blocked/failed work (P7/P8) — and it's meaningless unless enforcement makes it attributable (P9).
+
