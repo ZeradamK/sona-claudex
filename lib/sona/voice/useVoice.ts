@@ -20,6 +20,8 @@ type UseVoiceState = {
   audioLevel: number;
   error: string | null;
   transcript: { user: string; assistant: string };
+  /** Last measured voice-to-voice round trip (ms): user stopped → Sona spoke. */
+  latencyMs: number | null;
 };
 
 const MIC_TRIGGER = 0.06;
