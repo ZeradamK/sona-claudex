@@ -12,3 +12,16 @@
 
 import { Mic, Square } from "lucide-react";
 
+import { SphereScene } from "@/components/sphere/SphereScene";
+import type { SphereMode } from "@/components/sphere/ParticleSphere";
+import { useVoice, type VoiceMode } from "@/lib/sona/voice/useVoice";
+import { cn } from "@/lib/utils";
+
+const VOICE_TO_SPHERE: Record<VoiceMode, SphereMode> = {
+  idle: "idle",
+  connecting: "thinking",
+  listening: "listening",
+  thinking: "thinking",
+  speaking: "speaking"
+};
+
