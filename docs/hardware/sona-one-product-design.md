@@ -19,3 +19,9 @@ Status: **design-stage**, product-level. Source: multi-domain hardware design pa
 | **Wake word** | **Picovoice Porcupine** custom "Hey Sona" on the A76 cores | |
 | **Power** | **USB-C, fixed 5 V / 3 A (15 W)**, pre-certified adapter | No PD negotiation, no battery in v1. |
 
+Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only (can't run robust WebRTC + Rive + OTA), all-in-one voice modules (obscure the thin-client model + lock firmware).
+
+---
+
+## 2. System architecture
+
