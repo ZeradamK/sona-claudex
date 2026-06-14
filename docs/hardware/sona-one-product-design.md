@@ -87,3 +87,11 @@ Rejected: RK3588 (overkill GPU, price volatility, longer cert path), ESP32-only 
 | | + assembly/test (vol) | | | ~$10 |
 | | **Landed unit (vol)** | | | **~$128** |
 
+**Honest verdict vs target:** corrected volume BOM is **~$118** (the synth's $105 under-counted the XVF3800 as a bare IC that XMOS doesn't sell standalone, and the OLED at dev-board price). That's **slightly over the $120 BOM goal once landed (~$128)**. Retail **$199** still works at ~1.55× landed — thin but acceptable because **the business is the cloud subscription, not hardware margin.** The XVF3800 ($24) is the line that makes the product *good* — defend it, don't cost it out. A v2 cost-down unsolders the bare XVF3800 IC onto the carrier (~$11–15).
+
+---
+
+## 5. Cloud infra to build on Sona's backend
+
+The existing schema already fits: `Device` has `kind` (`edge-display`/`edge-speaker`), unique `fingerprint`, `householdId`, `lastSeenAt`; `app/api/voice/token` already mints Gemini Live ephemeral tokens server-side. New endpoints:
+
