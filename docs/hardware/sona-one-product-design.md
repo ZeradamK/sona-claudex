@@ -112,3 +112,18 @@ Box = stateless + interchangeable; memory/conversation live in `Household`/`Mess
 - **Phase 2 — DVT (wks 17–28).** Injection-mold base + aluminum top ring; acoustic-chamber tuning; AMOLED burn-in stack (pixel-shift, ~70% idle brightness, off-white palette); **FCC Part 15B + CE/RED** pre-compliance reusing CM5's pre-certified radio + pre-certified PSU (~$8–15k, 8–12 wks, parallelize with tooling). Success: ≥85% yield on a 500-unit pilot, BOM holding.
 - **Phase 3 — Production (mo 7–9+).** Volume CM build, factory ATE (per-unit audio calibration), signed-firmware chain, fleet dashboard, canary OTA, retail packaging. **$199.**
 
+---
+
+## 7. Top risks + open decisions
+
+**Biggest risk (de-risk FIRST, non-deferrable):** **Rive on VideoCore VII GPU is unvalidated** (~35–40% chance it doesn't hit 60 fps; CPU-only ≈20 fps = unacceptable). VC4 has incomplete GLES2 coverage and no public Rive examples. **Phase 0 wks 1–3:** triangle render proof → Rive cross-compile → face render test (~$200 hw + 7 dev-days). **Week-3 gate:** works → ship; fails → pivot to **LVGL sprite animation** (acceptable, less scalable).
+
+Other risks: CM5 supply (8–12 wk lead — secure allocation early; SoM is swappable); FCC/CE schedule gate (engage lab at DVT start, reuse pre-certified radio/PSU); OLED burn-in (mitigation stack above); thermal in a sealed 100 mm box (CM5 ~1 W idle / ~5 W peak, 10 W headroom under 15 W — passive aluminum likely fine, prove at 28–40 °C); OTA signing-key security (server-held key, device holds public key, mTLS).
+
+**Open decisions for the founder:**
+1. **US-first (FCC) or EU-first (CE/RED)?** → *Rec: US first.*
+2. **Launch personality count** (faces+voices) and who authors the Rive faces? → *Rec: 3 curated (cute/calm/playful), contract a Rive artist.*
+3. **Speaker tier:** 45 mm voice-tuned vs 50 mm+3 W music-capable (+~$4)? → *Rec: 45 mm — it's an assistant, not a music speaker.*
+4. **Hardware mic-mute** (physical disconnect, ~$1)? → *Strong rec: yes — trust feature.*
+5. **Retail price:** $199 (win the comparison) vs $229 (margin breathing room)? → *Rec: $199; monetize via subscription.*
+
