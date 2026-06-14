@@ -110,6 +110,13 @@ export class SpeakerPlayback {
     src.buffer = buf;
     src.connect(this.gain);
 
+    // Track the node so a barge-in flush can stop it mid-playback; drop it
+    // from the set once it finishes on its own.
+    this.live.add(src);
+    src.onended = () => {
+      this.live.delete(src);
+    };
+
     const now = this.ctx.currentTime;
     if (this.nextPlayTime < now) this.nextPlayTime = now;
     src.start(this.nextPlayTime);
