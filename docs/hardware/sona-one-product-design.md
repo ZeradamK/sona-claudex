@@ -127,3 +127,11 @@ Other risks: CM5 supply (8–12 wk lead — secure allocation early; SoM is swap
 4. **Hardware mic-mute** (physical disconnect, ~$1)? → *Strong rec: yes — trust feature.*
 5. **Retail price:** $199 (win the comparison) vs $229 (margin breathing room)? → *Rec: $199; monetize via subscription.*
 
+---
+
+## Key sources
+- Raspberry Pi CM5 (pricing/lifecycle); XMOS XVF3800 voice processor + ReSpeaker XVF3800 USB array; 1.43″ 466×466 round AMOLED (RM67162/CO5300); Gemini Live API ephemeral tokens over WebSocket (v1alpha).
+
+## Load-bearing existing code
+- `prisma/schema.prisma` — `Device` model (`kind`, unique `fingerprint`) plugs in directly.
+- `app/api/voice/token/route.ts` — the ephemeral-token mint to refactor into a shared `/api/device/token` service.
