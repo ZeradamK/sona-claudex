@@ -246,20 +246,25 @@ export function useVoice() {
             case "interrupted":
               // Barge-in: stop Sona's audio and treat what comes next as a
               // fresh user turn.
+              vlog("interrupted (barge-in) — flushing playback");
               speakerRef.current?.flush();
               newUserTurnRef.current = true;
               break;
             case "turnComplete":
               // Sona finished her turn; the next user transcript begins a new
               // exchange. Amplitude pump still derives mode.
+              vlog("turnComplete — audio chunks this turn:", audioOutCountRef.current);
+              audioOutCountRef.current = 0;
               newUserTurnRef.current = true;
               break;
             case "error":
+              vlog("error", event.message);
               setState((s) => ({ ...s, error: event.message }));
               void teardown();
               setMode("idle");
               break;
             case "close":
+              vlog("session close — active:", activeRef.current);
               if (activeRef.current) {
                 void teardown();
                 setMode("idle");
