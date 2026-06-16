@@ -340,6 +340,20 @@ export function useVoice() {
     }
   }, [start, stop]);
 
+  // Live tap into the audio graph Sona's voice plays through, so the avatar's
+  // HeadAudio lip-sync reads the exact playing signal. Null until a session is
+  // active. Polled by the avatar component (refs, so no re-render needed).
+  const getAudioTap = useCallback((): {
+    ctx: AudioContext;
+    node: AudioNode;
+  } | null => {
+    const sp = speakerRef.current;
+    const ctx = sp?.context;
+    const node = sp?.speechNode;
+    if (sp && ctx && node) return { ctx, node };
+    return null;
+  }, []);
+
   return {
     mode: state.mode,
     audioLevel: state.audioLevel,
@@ -350,6 +364,8 @@ export function useVoice() {
     cameraError: state.cameraError,
     /** Bind to the preview <video>; the same stream is sampled for the model. */
     videoRef: videoElRef,
+    /** Live audio tap for avatar lip-sync (null until a session is active). */
+    getAudioTap,
     start,
     stop,
     toggle
