@@ -23,10 +23,29 @@ type UseVoiceState = {
   transcript: { user: string; assistant: string };
   /** Last measured voice-to-voice round trip (ms): user stopped → Sona spoke. */
   latencyMs: number | null;
+  /** Camera is streaming frames to the model (the agent can see). */
+  seeing: boolean;
+  /** Non-fatal camera problem (voice keeps working). */
+  cameraError: string | null;
 };
 
 const MIC_TRIGGER = 0.06;
 const SPEAKER_REMAINING_MIN = 0.05;
+// While Sona is audibly speaking, only forward mic audio that clears this RMS
+// level. Her voice plays through a separate AudioContext the browser's echo
+// canceller can't subtract, so on speakers the mic re-captures it; without this
+// gate that echo streams back into Gemini as "user" speech and the session
+// wedges into silence after a couple turns. A genuine interrupt is louder than
+// room echo, so full-duplex barge-in still works. Tune 0.15–0.3 to taste.
+const BARGE_IN_LEVEL = 0.2;
+
+const VOICE_DEBUG =
+  typeof window !== "undefined" &&
+  (window as unknown as { __SONA_VOICE_DEBUG?: boolean }).__SONA_VOICE_DEBUG ===
+    true;
+function vlog(...args: unknown[]) {
+  if (VOICE_DEBUG) console.log("[voice]", ...args);
+}
 
 export function useVoice() {
   const [state, setState] = useState<UseVoiceState>({
