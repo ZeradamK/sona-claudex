@@ -92,3 +92,50 @@ export function RobotFace({ mode = "idle", audioLevel = 0, className }: Props) {
         nextSaccade = el + cadence + Math.random() * 1200;
       }
       look.x = lerp(look.x, lookTarget.x, 0.09);
+      look.y = lerp(look.y, lookTarget.y, 0.09);
+      pupilL.current?.setAttribute(
+        "transform",
+        `translate(${look.x.toFixed(2)} ${look.y.toFixed(2)})`
+      );
+      pupilR.current?.setAttribute(
+        "transform",
+        `translate(${look.x.toFixed(2)} ${look.y.toFixed(2)})`
+      );
+
+      // ── blink ────────────────────────────────────────────
+      if (!blinking && el > nextBlink) {
+        blinking = true;
+        blinkT = 0;
+      }
+      if (blinking) {
+        // quick close then open (~160ms total)
+        blinkT += dt / 80;
+        if (blinkT >= 2) {
+          blinking = false;
+          blinkT = 0;
+          nextBlink = el + 2600 + Math.random() * 3800;
+        }
+      }
+      const blinkAmt = blinking ? (blinkT < 1 ? blinkT : 2 - blinkT) : 0;
+
+      // baseline lids by mode: listening = wide (low base), thinking = squint
+      const targetBase =
+        m === "listening" ? 4 : m === "thinking" ? 26 : m === "idle" ? 14 : 8;
+      lidBase = lerp(lidBase, targetBase, 0.08);
+      const topH = Math.min(EYE.r * 2, lidBase + blinkAmt * (EYE.r * 2));
+      const botBase = m === "thinking" ? 22 : 8;
+      const botH = Math.min(EYE.r * 2, botBase + blinkAmt * (EYE.r * 2));
+      for (const lid of [lidL.current, lidR.current]) {
+        lid?.setAttribute("height", topH.toFixed(1));
+      }
+      for (const lid of [lidBL.current, lidBR.current]) {
+        if (lid) {
+          lid.setAttribute("height", botH.toFixed(1));
+          lid.setAttribute("y", (EYE.cy + EYE.r - botH).toFixed(1));
+        }
+      }
+
+      // ── iris size / color / glow ─────────────────────────
+      const targetIris =
+        EYE.iris +
+        (m === "listening" ? 5 : m === "thinking" ? -3 : 0) +
