@@ -129,6 +129,21 @@ export class SpeakerPlayback {
     return Math.max(0, this.nextPlayTime - this.ctx.currentTime);
   }
 
+  /** The AudioContext speech is played through (for sharing a graph). */
+  get context(): AudioContext | null {
+    return this.ctx;
+  }
+
+  /**
+   * The node carrying Sona's speech — a tap point for lip-sync. HeadAudio
+   * connects here to derive visemes from the exact audio that's playing, so the
+   * avatar's mouth is automatically in sync. It's a no-output sink, so tapping
+   * it doesn't change playback.
+   */
+  get speechNode(): GainNode | null {
+    return this.gain;
+  }
+
   level(): number {
     if (!this.analyser || !this.analyserBuf) return 0;
     this.analyser.getFloatTimeDomainData(this.analyserBuf);
