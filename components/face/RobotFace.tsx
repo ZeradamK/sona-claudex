@@ -186,3 +186,54 @@ export function RobotFace({ mode = "idle", audioLevel = 0, className }: Props) {
     side: "L" | "R",
     cx: number,
     pupilRef: React.RefObject<SVGGElement | null>,
+    irisRef: React.RefObject<SVGCircleElement | null>,
+    lidRef: React.RefObject<SVGRectElement | null>,
+    lidBRef: React.RefObject<SVGRectElement | null>
+  ) => (
+    <g>
+      {/* metallic housing */}
+      <circle cx={cx} cy={EYE.cy} r={EYE.r + 6} fill="#1b222c" />
+      <circle cx={cx} cy={EYE.cy} r={EYE.r + 2} fill="#0a0e14" />
+      <g clipPath={`url(#clip${side})`}>
+        <circle cx={cx} cy={EYE.cy} r={EYE.r} fill="#04070b" />
+        <g ref={pupilRef}>
+          <circle ref={irisRef} cx={cx} cy={EYE.cy} r={EYE.iris} fill="#22d3ee" />
+          <circle cx={cx} cy={EYE.cy} r={EYE.iris * 0.5} fill="#02080b" />
+          <circle
+            cx={cx - EYE.iris * 0.34}
+            cy={EYE.cy - EYE.iris * 0.34}
+            r={EYE.iris * 0.22}
+            fill="#eafdff"
+            opacity={0.85}
+          />
+        </g>
+        {/* top + bottom lids (height animated) */}
+        <rect
+          ref={lidRef}
+          x={cx - EYE.r}
+          y={EYE.cy - EYE.r}
+          width={EYE.r * 2}
+          height={0}
+          fill="#0c1118"
+        />
+        <rect
+          ref={lidBRef}
+          x={cx - EYE.r}
+          y={EYE.cy + EYE.r}
+          width={EYE.r * 2}
+          height={0}
+          fill="#0c1118"
+        />
+      </g>
+      {/* rim */}
+      <circle
+        cx={cx}
+        cy={EYE.cy}
+        r={EYE.r}
+        fill="none"
+        stroke="#2b3645"
+        strokeWidth={5}
+      />
+    </g>
+  );
+
