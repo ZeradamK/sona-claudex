@@ -279,12 +279,40 @@ export function useVoice() {
 
       const mic = new MicCapture();
       await mic.start((int16) => {
+        // Echo gate (half-duplex with a barge-in escape hatch). When Sona is
+        // speaking, drop mic frames unless the user is clearly louder than her
+        // echo — otherwise her own voice loops back into Gemini as input.
+        const speaker = speakerRef.current;
+        const sonaSpeaking =
+          (speaker?.remaining() ?? 0) > SPEAKER_REMAINING_MIN ||
+          (speaker?.level() ?? 0) > 0.01;
+        if (sonaSpeaking && mic.level() < BARGE_IN_LEVEL) return;
         sessionRef.current?.sendPcm(int16);
       });
       micRef.current = mic;
 
       activeRef.current = true;
       setMode("thinking");
+
+      // Camera: stream ~1 fps frames so the model can SEE the user and room.
+      // Its own try/catch — a denied/again-missing camera must never tear down
+      // the voice session; we surface it non-fatally instead.
+      try {
+        const camera = new CameraCapture();
+        await camera.start({
+          videoEl: videoElRef.current,
+          onFrame: (frame) => sessionRef.current?.sendVideoFrame(frame.data),
+          fps: 1
+        });
+        cameraRef.current = camera;
+        setState((s) => ({ ...s, seeing: true, cameraError: null }));
+        vlog("camera streaming frames to model");
+      } catch (camErr) {
+        const msg =
+          camErr instanceof Error ? camErr.message : "camera_failed";
+        vlog("camera failed", msg);
+        setState((s) => ({ ...s, seeing: false, cameraError: msg }));
+      }
     } catch (err) {
       const message =
         err instanceof Error
