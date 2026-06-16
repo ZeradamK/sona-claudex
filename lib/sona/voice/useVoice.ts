@@ -63,6 +63,10 @@ export function useVoice() {
   const micRef = useRef<MicCapture | null>(null);
   const speakerRef = useRef<SpeakerPlayback | null>(null);
   const sessionRef = useRef<LiveSessionHandle | null>(null);
+  const cameraRef = useRef<CameraCapture | null>(null);
+  // The page binds this to its <video> element so the live camera previews and
+  // the same stream is sampled into frames for the model.
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
   // Turn bookkeeping. `newUserTurn` flips true when Sona finishes (or is cut
