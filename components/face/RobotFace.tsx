@@ -46,3 +46,49 @@ export function RobotFace({ mode = "idle", audioLevel = 0, className }: Props) {
   modeRef.current = mode;
   levelRef.current = audioLevel;
 
+  const pupilL = useRef<SVGGElement | null>(null);
+  const pupilR = useRef<SVGGElement | null>(null);
+  const lidL = useRef<SVGRectElement | null>(null);
+  const lidR = useRef<SVGRectElement | null>(null);
+  const lidBL = useRef<SVGRectElement | null>(null);
+  const lidBR = useRef<SVGRectElement | null>(null);
+  const irisL = useRef<SVGCircleElement | null>(null);
+  const irisR = useRef<SVGCircleElement | null>(null);
+  const barRefs = useRef<(SVGRectElement | null)[]>([]);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // mutable animation state
+    const look = { x: 0, y: 0 };
+    let lookTarget = { x: 0, y: 0 };
+    let nextSaccade = 0;
+    let nextBlink = 800;
+    let blinkT = 0; // 0 = open, 1 = shut
+    let blinking = false;
+    let lidBase = 0; // eased baseline lid (squint/wide)
+    let irisR0 = EYE.iris;
+    let mouthH = 6;
+    let t0 = performance.now();
+    const start = t0;
+
+    const tick = (now: number) => {
+      const dt = Math.min(64, now - t0);
+      t0 = now;
+      const el = now - start;
+      const m = modeRef.current;
+      const lvl = levelRef.current;
+      const color = COLOR[m];
+
+      // ── eye look / saccades ──────────────────────────────
+      const range =
+        m === "listening" ? 12 : m === "thinking" ? 16 : m === "speaking" ? 8 : 22;
+      if (el > nextSaccade) {
+        lookTarget = {
+          x: (Math.random() * 2 - 1) * range,
+          // thinking glances up; otherwise wander around center
+          y: (Math.random() * 2 - 1) * range * 0.7 - (m === "thinking" ? 10 : 0)
+        };
+        const cadence = m === "listening" ? 1400 : m === "idle" ? 2600 : 1800;
+        nextSaccade = el + cadence + Math.random() * 1200;
+      }
+      look.x = lerp(look.x, lookTarget.x, 0.09);
