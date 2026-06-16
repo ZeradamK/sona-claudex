@@ -26,3 +26,30 @@ export class CameraCapture {
     onFrame: (frame: CameraFrame) => void;
     videoEl?: HTMLVideoElement | null;
     fps?: number;
+    maxDim?: number;
+    quality?: number;
+  }) {
+    const {
+      onFrame,
+      videoEl,
+      fps = DEFAULT_FPS,
+      maxDim = DEFAULT_MAX_DIM,
+      quality = DEFAULT_QUALITY
+    } = opts;
+
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+
+    let video = videoEl ?? null;
+    if (!video) {
+      video = document.createElement("video");
+      this.ownsVideo = true;
+    }
+    video.srcObject = this.stream;
+    video.muted = true;
