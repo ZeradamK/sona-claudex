@@ -53,7 +53,9 @@ export function useVoice() {
     audioLevel: 0,
     error: null,
     transcript: { user: "", assistant: "" },
-    latencyMs: null
+    latencyMs: null,
+    seeing: false,
+    cameraError: null
   });
 
   const modeRef = useRef<VoiceMode>("idle");
