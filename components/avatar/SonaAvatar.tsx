@@ -28,11 +28,15 @@ type TalkingHeadInstance = {
   stop?: () => void;
   mtAvatar?: Record<string, MorphTarget | undefined>;
   opt: { update: ((dt: number) => void) | null };
+  lookAtCamera?: (ms?: number) => void;
+  speakWithHands?: (delay?: number, prob?: number) => void;
 };
 type HeadAudioNode = AudioNode & {
   loadModel: (url: string) => Promise<void>;
   update: (dt: number) => void;
   onvalue: ((key: string, value: number) => void) | null;
+  onstarted: (() => void) | null;
+  onended: (() => void) | null;
 };
 
 type Props = {
@@ -162,7 +166,13 @@ export function SonaAvatar({
         await tap.ctx.audioWorklet.addModule("/avatar/headworklet.min.mjs");
         if (cancelled) return;
         const ha = new mod.HeadAudio(tap.ctx, {
-          parameterData: { vadGateActiveDb: -40, vadGateInactiveDb: -60 }
+          parameterData: {
+            // Sona's voice is female (~200Hz); the 150Hz default mistracks
+            // visemes. Tighter inactive gate closes the mouth cleanly in pauses.
+            speakerMeanHz: 200,
+            vadGateActiveDb: -42,
+            vadGateInactiveDb: -55
+          }
         });
         await ha.loadModel("/avatar/model-en-mixed.bin");
         if (cancelled) {
@@ -182,6 +192,23 @@ export function SonaAvatar({
           }
         };
         head.opt.update = ha.update.bind(ha); // advanced each TalkingHead frame
+
+        // Lifelike turn-taking: when she starts a new sentence (after a real
+        // pause), make eye contact and — on bigger gaps (a new reply) — gesture
+        // with her hands, like a person would. Guarded: some rigs lack hands.
+        let lastEnded = 0;
+        ha.onended = () => {
+          lastEnded = Date.now();
+        };
+        ha.onstarted = () => {
+          const gap = Date.now() - lastEnded;
+          try {
+            head.lookAtCamera?.(600);
+            if (gap > 400) head.speakWithHands?.();
+          } catch {
+            // ignore (rig without hand bones)
+          }
+        };
         headAudioRef.current = ha;
       } catch {
         // Lip-sync failed (worklet/model); avatar still renders + idles. Non-fatal.
