@@ -11,7 +11,9 @@
  */
 
 import { Camera, CameraOff, Mic, Square } from "lucide-react";
+import { useState } from "react";
 
+import { SonaAvatar } from "@/components/avatar/SonaAvatar";
 import { RobotFace } from "@/components/face/RobotFace";
 import { useVoice, type VoiceMode } from "@/lib/sona/voice/useVoice";
 import { cn } from "@/lib/utils";
@@ -24,9 +26,18 @@ const LABEL: Record<VoiceMode, string> = {
   speaking: "Speaking"
 };
 
+// The 3D human avatar GLB. Default is a free female sample (proven with HeadAudio
+// real-time lip-sync); drop in your own Avaturn "businesswoman in a black suit"
+// export and set NEXT_PUBLIC_SONA_AVATAR_URL to it. Must have ARKit + Oculus
+// visemes and a Mixamo-compatible rig (Avaturn / RPM exports do).
+const AVATAR_URL =
+  process.env.NEXT_PUBLIC_SONA_AVATAR_URL ??
+  "https://cdn.jsdelivr.net/gh/met4citizen/HeadAudio@main/avatars/julia.glb";
+
 export default function VoiceTestPage() {
   const voice = useVoice();
   const active = voice.mode !== "idle";
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   const banner = voice.error
     ? voice.error === "gemini_api_key_missing"
@@ -90,13 +101,24 @@ export default function VoiceTestPage() {
         </div>
       </header>
 
-      {/* The face */}
-      <div className="relative z-10 mx-auto mt-2 flex h-[42vh] max-h-[440px] w-full max-w-[560px] items-center justify-center px-6">
-        <RobotFace
-          mode={voice.mode}
-          audioLevel={voice.audioLevel}
-          className="h-full w-full"
-        />
+      {/* The avatar — a real 3D human, lip-synced to Sona's live voice.
+          Falls back to the lightweight robot face if the GLB can't load. */}
+      <div className="relative z-10 mx-auto mt-1 flex h-[58vh] max-h-[620px] w-full max-w-[560px] items-center justify-center">
+        {avatarFailed ? (
+          <RobotFace
+            mode={voice.mode}
+            audioLevel={voice.audioLevel}
+            className="h-full w-full"
+          />
+        ) : (
+          <SonaAvatar
+            url={AVATAR_URL}
+            active={active}
+            getAudioTap={voice.getAudioTap}
+            onError={() => setAvatarFailed(true)}
+            className="h-full w-full"
+          />
+        )}
       </div>
 
       {/* Live camera view — bound to the same stream sampled for the model */}
