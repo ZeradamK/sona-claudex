@@ -237,3 +237,46 @@ export function RobotFace({ mode = "idle", audioLevel = 0, className }: Props) {
     </g>
   );
 
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 440 280"
+      role="img"
+      aria-label="Sona"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        <clipPath id="clipL">
+          <circle cx={EYE.lx} cy={EYE.cy} r={EYE.r} />
+        </clipPath>
+        <clipPath id="clipR">
+          <circle cx={EYE.rx} cy={EYE.cy} r={EYE.r} />
+        </clipPath>
+      </defs>
+
+      {eye("L", EYE.lx, pupilL, irisL, lidL, lidBL)}
+      {eye("R", EYE.rx, pupilR, irisR, lidR, lidBR)}
+
+      {/* mouth — robotic EQ grille */}
+      {Array.from({ length: MOUTH.bars }).map((_, i) => {
+        const x =
+          MOUTH.cx + (i - (MOUTH.bars - 1) / 2) * MOUTH.gap - MOUTH.w / 2;
+        return (
+          <rect
+            key={i}
+            ref={(el) => {
+              barRefs.current[i] = el;
+            }}
+            x={x}
+            y={MOUTH.cy - 4}
+            width={MOUTH.w}
+            height={8}
+            rx={MOUTH.w / 2}
+            fill="#2dd4ee"
+            opacity={0.7}
+          />
+        );
+      })}
+    </svg>
+  );
+}
