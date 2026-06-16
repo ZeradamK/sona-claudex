@@ -173,7 +173,9 @@ export function useVoice() {
       ...s,
       error: null,
       transcript: { user: "", assistant: "" },
-      latencyMs: null
+      latencyMs: null,
+      seeing: false,
+      cameraError: null
     }));
     setMode("connecting");
 
