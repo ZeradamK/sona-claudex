@@ -87,6 +87,20 @@ Verify two Pi-specific things on the **target network** before deploying:
 2. The Pi's WiFi holds a persistent WebSocket under continuous 16kHz upstream
    audio — that's the one real difference from a dev laptop.
 
+## The face
+
+`/voice` shows a WALL-E-style robot face ([components/face/RobotFace.tsx](../../components/face/RobotFace.tsx)) instead of the particle sphere: two binocular "lens" eyes that saccade and blink, and a robotic EQ-grille mouth that moves with Sona's voice. It's pure SVG driven by one `requestAnimationFrame` loop that mutates attributes through refs (no per-frame React render), reacting to `mode` + `audioLevel`: wide attentive eyes when listening, an upward glance when thinking, mouth amplitude when speaking.
+
+## Vision (camera)
+
+Sona can SEE you. While a voice session is live, [lib/sona/voice/camera.ts](../../lib/sona/voice/camera.ts) opens the camera, previews it on `/voice`, and samples it to **~1 fps JPEG frames** that are streamed to the same Gemini Live session via `sendRealtimeInput({ media: { data, mimeType: "image/jpeg" } })` ([liveSession.ts](../../lib/sona/voice/liveSession.ts)). The model fuses vision with the spoken turn — ask "what am I holding?" and it answers from the frame.
+
+Verified facts:
+- The native-audio model `gemini-2.5-flash-native-audio-preview-12-2025` **does** consume image input (probed live: it read back the colors of a test frame). No model downgrade needed for vision.
+- **No token-mint change** for video: `responseModalities` controls OUTPUT only (stays `["AUDIO"]`); camera frames are input-only.
+- Frames are downscaled to ≤768px and sent at 1 fps to keep image-token cost sane. Every frame is billed, so the camera runs only while a session is active.
+- The camera has its own try/catch — if it's denied, voice still works and the UI shows a non-fatal "camera unavailable" banner (`useVoice` exposes `seeing` + `cameraError`).
+
 ## Later (not needed for testing)
 
 - **Session resumption** for >15-min conversations: pass `sessionResumption: {}`
