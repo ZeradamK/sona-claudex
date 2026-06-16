@@ -75,3 +75,49 @@ export default function VoiceTestPage() {
           )}
           <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface/70 px-3 py-1.5 text-sm text-text-secondary backdrop-blur">
             <span
+              className={cn(
+                "size-2 rounded-full transition-colors",
+                voice.mode === "listening" && "bg-cyan-300",
+                (voice.mode === "thinking" || voice.mode === "connecting") &&
+                  "bg-accent-warm",
+                voice.mode === "speaking" && "bg-accent",
+                voice.mode === "idle" && "bg-text-tertiary",
+                banner && "bg-red-400"
+              )}
+            />
+            {banner ? "Error" : LABEL[voice.mode]}
+          </div>
+        </div>
+      </header>
+
+      {/* The face */}
+      <div className="relative z-10 mx-auto mt-2 flex h-[42vh] max-h-[440px] w-full max-w-[560px] items-center justify-center px-6">
+        <RobotFace
+          mode={voice.mode}
+          audioLevel={voice.audioLevel}
+          className="h-full w-full"
+        />
+      </div>
+
+      {/* Live camera view — bound to the same stream sampled for the model */}
+      <div
+        className={cn(
+          "absolute right-5 top-20 z-20 overflow-hidden rounded-xl border shadow-[0_18px_80px_rgba(0,0,0,0.4)] backdrop-blur transition-opacity sm:right-8",
+          active && voice.seeing
+            ? "border-emerald-400/30 opacity-100"
+            : "pointer-events-none opacity-0"
+        )}
+      >
+        <video
+          ref={voice.videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="h-28 w-40 -scale-x-100 object-cover sm:h-32 sm:w-48"
+        />
+        <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded bg-black/45 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200">
+          <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+          LIVE
+        </div>
+      </div>
+
