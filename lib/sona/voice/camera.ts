@@ -84,3 +84,27 @@ export class CameraCapture {
     this.timer = window.setInterval(capture, intervalMs);
   }
 
+  get active(): boolean {
+    return this.stream !== null;
+  }
+
+  stop() {
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    this.stream?.getTracks().forEach((t) => t.stop());
+    if (this.video) {
+      try {
+        this.video.srcObject = null;
+      } catch {
+        // ignore
+      }
+      if (this.ownsVideo) this.video.remove?.();
+    }
+    this.video = null;
+    this.stream = null;
+    this.canvas = null;
+    this.ownsVideo = false;
+  }
+}
