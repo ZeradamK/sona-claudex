@@ -139,3 +139,50 @@ export function RobotFace({ mode = "idle", audioLevel = 0, className }: Props) {
       const targetIris =
         EYE.iris +
         (m === "listening" ? 5 : m === "thinking" ? -3 : 0) +
+        (m === "speaking" ? lvl * 7 : 0);
+      irisR0 = lerp(irisR0, targetIris, 0.12);
+      const pulse =
+        m === "speaking"
+          ? 1
+          : m === "connecting"
+            ? 0.7 + 0.3 * Math.sin(el / 220)
+            : 0.85 + 0.15 * Math.sin(el / 900);
+      for (const iris of [irisL.current, irisR.current]) {
+        if (iris) {
+          iris.setAttribute("r", irisR0.toFixed(2));
+          iris.setAttribute("fill", color);
+          iris.style.filter = `drop-shadow(0 0 ${(10 * pulse).toFixed(1)}px ${color})`;
+          iris.style.opacity = String(0.85 + 0.15 * pulse);
+        }
+      }
+
+      // ── mouth (robotic EQ grille) ────────────────────────
+      const speaking = m === "speaking";
+      const target = speaking ? 6 + lvl * 40 : m === "thinking" ? 5 : 7;
+      mouthH = lerp(mouthH, target, speaking ? 0.5 : 0.12);
+      const half = (MOUTH.bars - 1) / 2;
+      barRefs.current.forEach((bar, i) => {
+        if (!bar) return;
+        // center bars taller, edges shorter; add a little life when speaking
+        const fall = 1 - Math.abs(i - half) / (half + 1.2);
+        const wobble = speaking ? 0.7 + 0.3 * Math.sin(el / 90 + i) : 1;
+        const h = Math.max(5, mouthH * (0.55 + 0.45 * fall) * wobble);
+        bar.setAttribute("height", h.toFixed(1));
+        bar.setAttribute("y", (MOUTH.cy - h / 2).toFixed(1));
+        bar.setAttribute("fill", color);
+        bar.style.opacity = speaking ? "0.95" : "0.7";
+      });
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  const eye = (
+    side: "L" | "R",
+    cx: number,
+    pupilRef: React.RefObject<SVGGElement | null>,
