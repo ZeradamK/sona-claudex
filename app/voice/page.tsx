@@ -121,3 +121,37 @@ export default function VoiceTestPage() {
         </div>
       </div>
 
+      {/* Transcript + controls */}
+      <section className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-end gap-4 px-5 pb-10 sm:px-8">
+        {banner && (
+          <div className="mx-auto w-full rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            {banner}
+          </div>
+        )}
+        {active && voice.cameraError && (
+          <div className="mx-auto w-full rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            Camera unavailable ({voice.cameraError}). Sona can hear you but
+            can&apos;t see — allow camera access and reconnect.
+          </div>
+        )}
+
+        <div className="flex min-h-[7rem] flex-col gap-2">
+          {voice.transcript.user && (
+            <div className="ml-auto max-w-[min(560px,88vw)] rounded-md border border-border bg-surface/75 px-4 py-3 text-sm leading-6 text-text shadow-[0_18px_80px_rgba(0,0,0,0.18)] backdrop-blur">
+              {voice.transcript.user}
+            </div>
+          )}
+          {voice.transcript.assistant && (
+            <div className="mr-auto max-w-[min(560px,88vw)] rounded-md border border-border bg-surface-2/70 px-4 py-3 text-sm leading-6 text-text shadow-[0_18px_80px_rgba(0,0,0,0.18)] backdrop-blur">
+              {voice.transcript.assistant}
+            </div>
+          )}
+          {!voice.transcript.user && !voice.transcript.assistant && (
+            <p className="my-auto text-center text-sm text-text-tertiary">
+              {active
+                ? "Listening — talk freely. Pause to think; Sona won't cut you off."
+                : "Tap to talk. Sona will see you through the camera and hear you."}
+            </p>
+          )}
+        </div>
+
