@@ -202,6 +202,7 @@ export function useVoice() {
         onEvent: (event) => {
           switch (event.type) {
             case "audioOut":
+              audioOutCountRef.current += 1;
               if (awaitingFirstAudioRef.current) {
                 awaitingFirstAudioRef.current = false;
                 const ms = performance.now() - userLastSpokeAtRef.current;
