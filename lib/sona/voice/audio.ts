@@ -6,6 +6,12 @@
 
 const MIC_RATE = 16000;
 const SPEAKER_RATE = 24000;
+// HeadAudio derives visemes from the playing signal with a small processing
+// latency, so the mouth would otherwise trail the sound (a "dubbed" look). We
+// tap the speech BEFORE this delay and play it AFTER, so the audio reaches the
+// ears exactly when the avatar's mouth forms the shape. ~90ms ≈ HeadAudio's
+// window/classify latency; barely perceptible as response delay.
+const LIPSYNC_DELAY_SEC = 0.09;
 
 export class MicCapture {
   private ctx: AudioContext | null = null;
@@ -78,6 +84,7 @@ export class SpeakerPlayback {
   private analyser: AnalyserNode | null = null;
   private analyserBuf: Float32Array<ArrayBuffer> | null = null;
   private gain: GainNode | null = null;
+  private delay: DelayNode | null = null;
   private nextPlayTime = 0;
   // Every source currently scheduled or playing. flush() stops them all for an
   // instant barge-in, instead of only refusing to schedule *new* chunks.
@@ -91,7 +98,12 @@ export class SpeakerPlayback {
     this.analyser.fftSize = 1024;
     this.analyserBuf = new Float32Array(this.analyser.fftSize);
 
-    this.gain.connect(this.analyser);
+    // gain is the lip-sync tap (pre-delay). Playback path is delayed so the
+    // sound lands in sync with the visemes HeadAudio derives from that tap.
+    this.delay = this.ctx.createDelay(1);
+    this.delay.delayTime.value = LIPSYNC_DELAY_SEC;
+    this.gain.connect(this.delay);
+    this.delay.connect(this.analyser);
     this.analyser.connect(this.ctx.destination);
 
     this.nextPlayTime = this.ctx.currentTime;
@@ -173,12 +185,14 @@ export class SpeakerPlayback {
     try {
       this.flush();
       this.gain?.disconnect();
+      this.delay?.disconnect();
       this.analyser?.disconnect();
       await this.ctx?.close();
     } catch {
       // ignore
     }
     this.gain = null;
+    this.delay = null;
     this.analyser = null;
     this.analyserBuf = null;
     this.ctx = null;
