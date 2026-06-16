@@ -89,6 +89,10 @@ export function useVoice() {
     sessionRef.current?.close();
     sessionRef.current = null;
 
+    if (cameraRef.current) {
+      cameraRef.current.stop();
+      cameraRef.current = null;
+    }
     if (micRef.current) {
       await micRef.current.stop();
       micRef.current = null;
