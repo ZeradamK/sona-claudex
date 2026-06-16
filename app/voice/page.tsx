@@ -155,3 +155,38 @@ export default function VoiceTestPage() {
           )}
         </div>
 
+        <div className="flex flex-col items-center gap-3">
+          <button
+            aria-label={active ? "End conversation" : "Start talking"}
+            className={cn(
+              "grid size-20 place-items-center rounded-full border transition-colors",
+              voice.mode === "idle" &&
+                "border-border bg-surface/80 text-text hover:bg-surface-2",
+              voice.mode === "connecting" &&
+                "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
+              voice.mode === "listening" &&
+                "border-cyan-300/40 bg-cyan-300/10 text-cyan-200",
+              voice.mode === "thinking" &&
+                "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
+              voice.mode === "speaking" &&
+                "border-accent/40 bg-accent/10 text-accent"
+            )}
+            onClick={() => {
+              void voice.toggle();
+            }}
+            type="button"
+          >
+            {voice.mode === "idle" ? (
+              <Mic className="size-7" aria-hidden="true" />
+            ) : (
+              <Square className="size-6" aria-hidden="true" />
+            )}
+          </button>
+          <span className="text-xs text-text-tertiary">
+            {active ? "Tap to end" : "Tap to talk"}
+          </span>
+        </div>
+      </section>
+    </main>
+  );
+}
