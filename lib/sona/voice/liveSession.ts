@@ -30,6 +30,8 @@ export type LiveSessionEvent =
 
 export type LiveSessionHandle = {
   sendPcm: (int16: Int16Array) => void;
+  /** Send one camera frame (base64 JPEG) so the model can see the user/room. */
+  sendVideoFrame: (jpegBase64: string) => void;
   close: () => void;
 };
 
