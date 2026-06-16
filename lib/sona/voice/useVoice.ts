@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MicCapture, SpeakerPlayback } from "@/lib/sona/voice/audio";
+import { CameraCapture } from "@/lib/sona/voice/camera";
 import {
   type LiveSessionHandle,
   openLiveSession
