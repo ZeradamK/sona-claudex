@@ -346,6 +346,10 @@ export function useVoice() {
     error: state.error,
     transcript: state.transcript,
     latencyMs: state.latencyMs,
+    seeing: state.seeing,
+    cameraError: state.cameraError,
+    /** Bind to the preview <video>; the same stream is sampled for the model. */
+    videoRef: videoElRef,
     start,
     stop,
     toggle
