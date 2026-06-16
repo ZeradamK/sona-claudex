@@ -53,3 +53,34 @@ export class CameraCapture {
     }
     video.srcObject = this.stream;
     video.muted = true;
+    video.playsInline = true;
+    try {
+      await video.play();
+    } catch {
+      // autoplay can reject without a gesture; the stream still renders frames
+    }
+    this.video = video;
+    this.canvas = document.createElement("canvas");
+
+    const capture = () => {
+      const v = this.video;
+      const c = this.canvas;
+      if (!v || !c || !v.videoWidth || !v.videoHeight) return;
+      const scale = Math.min(1, maxDim / Math.max(v.videoWidth, v.videoHeight));
+      const w = Math.max(1, Math.round(v.videoWidth * scale));
+      const h = Math.max(1, Math.round(v.videoHeight * scale));
+      if (c.width !== w) c.width = w;
+      if (c.height !== h) c.height = h;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(v, 0, 0, w, h);
+      const url = c.toDataURL("image/jpeg", quality);
+      const comma = url.indexOf(",");
+      const data = comma >= 0 ? url.slice(comma + 1) : "";
+      if (data) onFrame({ data, mimeType: "image/jpeg" });
+    };
+
+    const intervalMs = Math.max(200, Math.round(1000 / fps));
+    this.timer = window.setInterval(capture, intervalMs);
+  }
+
