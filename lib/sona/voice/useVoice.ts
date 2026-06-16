@@ -76,6 +76,7 @@ export function useVoice() {
   const newUserTurnRef = useRef(true);
   const userLastSpokeAtRef = useRef(0);
   const awaitingFirstAudioRef = useRef(false);
+  const audioOutCountRef = useRef(0);
 
   const setMode = useCallback((next: VoiceMode) => {
     if (modeRef.current === next) return;
