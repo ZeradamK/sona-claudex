@@ -9,9 +9,11 @@ const SPEAKER_RATE = 24000;
 // HeadAudio derives visemes from the playing signal with a small processing
 // latency, so the mouth would otherwise trail the sound (a "dubbed" look). We
 // tap the speech BEFORE this delay and play it AFTER, so the audio reaches the
-// ears exactly when the avatar's mouth forms the shape. ~90ms ≈ HeadAudio's
-// window/classify latency; barely perceptible as response delay.
-const LIPSYNC_DELAY_SEC = 0.09;
+// ears exactly when the avatar's mouth forms the shape. ~80ms ≈ HeadAudio's
+// window/classify latency. Env-tunable: lower it (toward 0) for the absolute
+// snappiest voice if you don't mind looser lip-sync; raise it if the mouth lags.
+const LIPSYNC_DELAY_SEC =
+  Number(process.env.NEXT_PUBLIC_SONA_LIPSYNC_DELAY_MS ?? 80) / 1000;
 
 export class MicCapture {
   private ctx: AudioContext | null = null;
