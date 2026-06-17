@@ -302,7 +302,9 @@ export function useVoice() {
         await camera.start({
           videoEl: videoElRef.current,
           onFrame: (frame) => sessionRef.current?.sendVideoFrame(frame.data),
-          fps: 1
+          // 2 fps gives her fresher visual context (more reactive to what she
+          // sees) at modest image-token cost. Tune via env.
+          fps: Number(process.env.NEXT_PUBLIC_SONA_CAMERA_FPS ?? 2)
         });
         cameraRef.current = camera;
         setState((s) => ({ ...s, seeing: true, cameraError: null }));
