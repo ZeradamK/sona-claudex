@@ -84,6 +84,18 @@ export function useVoice() {
   // The page binds this to its <video> element so the live camera previews and
   // the same stream is sampled into frames for the model.
   const videoElRef = useRef<HTMLVideoElement | null>(null);
+
+  // Avatar control surface (TalkingHead), registered by SonaAvatar once ready.
+  // Tool calls from the model are routed here.
+  const avatarControlsRef = useRef<AvatarControls | null>(null);
+  // Latest session-resumption handle + a guard so a reconnect runs only once.
+  const resumeHandleRef = useRef<string | null>(null);
+  const reconnectingRef = useRef(false);
+  // Web-search relay: accumulate the user's utterance + Sona's reply for the
+  // current turn; when she defers ("let me look that up"), search + relay once.
+  const userUtteranceRef = useRef("");
+  const modelUtteranceRef = useRef("");
+  const searchedTurnRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
   // Turn bookkeeping. `newUserTurn` flips true when Sona finishes (or is cut
