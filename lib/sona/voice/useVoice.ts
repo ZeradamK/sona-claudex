@@ -198,17 +198,23 @@ export function useVoice() {
 
     newUserTurnRef.current = true;
     awaitingFirstAudioRef.current = false;
+    userUtteranceRef.current = "";
+    modelUtteranceRef.current = "";
+    searchedTurnRef.current = false;
     setState((s) => ({
       ...s,
       error: null,
       transcript: { user: "", assistant: "" },
       latencyMs: null,
       seeing: false,
-      cameraError: null
+      cameraError: null,
+      searching: false
     }));
+    resumeHandleRef.current = null;
+    reconnectingRef.current = false;
     setMode("connecting");
 
-    try {
+    async function getToken(): Promise<{ token: string; model: string }> {
       const tokenRes = await fetch("/api/voice/token", { method: "POST" });
       if (!tokenRes.ok) {
         const data = (await tokenRes.json().catch(() => ({}))) as {
