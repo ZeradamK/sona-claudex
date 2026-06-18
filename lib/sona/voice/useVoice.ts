@@ -56,6 +56,13 @@ function vlog(...args: unknown[]) {
   if (VOICE_DEBUG) console.log("[voice]", ...args);
 }
 
+// When Sona says one of these (the persona tells her to defer like this for
+// look-up requests), we run a grounded web search on what the user asked and
+// relay the result back for her to speak. Her judgment of "this needs a search"
+// is more reliable than keyword-matching the user — and it never fires on chat.
+const SEARCH_DEFERRAL =
+  /\b(look(ing)?\s+(that|it|this)\s+up|look\s+up|let me (search|google|check that)|searching (for )?that|i'?ll look (that|it) up|pull (that|it) up)\b/i;
+
 export function useVoice() {
   const [state, setState] = useState<UseVoiceState>({
     mode: "idle",
