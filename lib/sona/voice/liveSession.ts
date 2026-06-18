@@ -179,6 +179,33 @@ export async function openLiveSession({
         media: { data: jpegBase64, mimeType: "image/jpeg" }
       });
     },
+    sendClientContent: (text: string) => {
+      // Inject a turn into the live session (used to relay grounded web-search
+      // results back in — she speaks them). Verified safe with native-audio.
+      if (!open) return;
+      try {
+        session.sendClientContent({
+          turns: [{ role: "user", parts: [{ text }] }],
+          turnComplete: true
+        });
+      } catch {
+        // ignore
+      }
+    },
+    sendToolResponse: (responses) => {
+      if (!open) return;
+      try {
+        session.sendToolResponse({
+          functionResponses: responses.map((r) => ({
+            id: r.id,
+            name: r.name,
+            response: r.response
+          }))
+        });
+      } catch {
+        // ignore — a late response after close is harmless
+      }
+    },
     close: () => {
       try {
         session.close();
