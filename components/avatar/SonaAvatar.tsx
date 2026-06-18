@@ -48,6 +48,8 @@ type Props = {
   /** A voice session is live (audio is/will be flowing). */
   active: boolean;
   getAudioTap: () => AudioTap | null;
+  /** Register imperative controls so model tool calls can drive the avatar. */
+  registerControls?: (controls: AvatarControls | null) => void;
   className?: string;
   onReady?: () => void;
   onError?: (msg: string) => void;
