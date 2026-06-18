@@ -131,6 +131,7 @@ export default function VoiceTestPage() {
             key={current.avatarUrl}
             url={current.avatarUrl}
             active={active}
+            body={current.gender === "male" ? "M" : "F"}
             getAudioTap={voice.getAudioTap}
             registerControls={voice.registerAvatarControls}
             onError={() => setAvatarFailed(true)}

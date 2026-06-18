@@ -47,6 +47,8 @@ type Props = {
   url: string;
   /** A voice session is live (audio is/will be flowing). */
   active: boolean;
+  /** Body type for TalkingHead posing/animation — "M" male, "F" female. */
+  body?: "M" | "F";
   getAudioTap: () => AudioTap | null;
   /** Register imperative controls so model tool calls can drive the avatar. */
   registerControls?: (controls: AvatarControls | null) => void;
@@ -58,6 +60,7 @@ type Props = {
 export function SonaAvatar({
   url,
   active,
+  body = "F",
   getAudioTap,
   registerControls,
   className,
@@ -75,6 +78,8 @@ export function SonaAvatar({
   const onErrorRef = useRef(onError);
   const getTapRef = useRef(getAudioTap);
   const registerControlsRef = useRef(registerControls);
+  const bodyRef = useRef(body);
+  bodyRef.current = body;
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   getTapRef.current = getAudioTap;
@@ -107,7 +112,7 @@ export function SonaAvatar({
         headRef.current = head;
         await head.showAvatar({
           url,
-          body: "F",
+          body: bodyRef.current,
           avatarMood: "neutral",
           lipsyncLang: "en"
         });
