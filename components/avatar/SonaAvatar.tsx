@@ -74,9 +74,11 @@ export function SonaAvatar({
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
   const getTapRef = useRef(getAudioTap);
+  const registerControlsRef = useRef(registerControls);
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   getTapRef.current = getAudioTap;
+  registerControlsRef.current = registerControls;
 
   // 1) Create TalkingHead + load the avatar GLB (once per url).
   useEffect(() => {
