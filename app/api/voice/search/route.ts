@@ -18,3 +18,11 @@ export async function POST(req: Request) {
   let query = "";
   try {
     const body = (await req.json()) as { query?: string };
+    query = (body.query ?? "").trim();
+  } catch {
+    // ignore — empty query handled below
+  }
+  if (!query) {
+    return NextResponse.json({ error: "empty_query" }, { status: 400 });
+  }
+
