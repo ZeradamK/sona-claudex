@@ -26,3 +26,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "empty_query" }, { status: 400 });
   }
 
+  try {
