@@ -31,3 +31,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ answer });
   } catch (err) {
     return NextResponse.json(
+      { error: err instanceof Error ? err.message : "search_failed" },
+      { status: 500 }
