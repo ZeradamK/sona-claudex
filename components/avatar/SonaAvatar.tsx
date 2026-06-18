@@ -115,6 +115,25 @@ export function SonaAvatar({
           head.stop?.();
           return;
         }
+        // Expose mood/gesture controls so the model's tool calls can drive the
+        // face and body. TalkingHead playGesture(name, dur, mirror): mirror=true
+        // is the right hand — the natural side for a wave.
+        registerControlsRef.current?.({
+          setMood: (mood) => {
+            try {
+              head.setMood?.(mood);
+            } catch {
+              // ignore unknown mood
+            }
+          },
+          playGesture: (gesture, hand) => {
+            try {
+              head.playGesture?.(gesture, 3, hand === "right");
+            } catch {
+              // ignore unknown gesture / rig without hands
+            }
+          }
+        });
         onReadyRef.current?.();
       } catch (e) {
         onErrorRef.current?.(
