@@ -144,6 +144,7 @@ export function SonaAvatar({
 
     return () => {
       disposedRef.current = true;
+      registerControlsRef.current?.(null);
       try {
         headAudioRef.current?.disconnect();
       } catch {
