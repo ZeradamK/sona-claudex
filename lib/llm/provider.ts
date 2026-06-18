@@ -304,6 +304,10 @@ class AppleIntelligenceProvider implements LLMProvider {
     return this.notReady();
   }
 
+  searchWeb(_query: string): Promise<string> {
+    return this.notReady();
+  }
+
   mintVoiceToken(_opts: VoiceTokenOptions): Promise<VoiceToken> {
     return this.notReady();
   }
