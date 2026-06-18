@@ -32,6 +32,8 @@ type TalkingHeadInstance = {
   opt: { update: ((dt: number) => void) | null };
   lookAtCamera?: (ms?: number) => void;
   speakWithHands?: (delay?: number, prob?: number) => void;
+  setMood?: (mood: string) => void;
+  playGesture?: (name: string, dur?: number, mirror?: boolean, ms?: number) => void;
 };
 type HeadAudioNode = AudioNode & {
   loadModel: (url: string) => Promise<void>;
