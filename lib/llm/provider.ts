@@ -49,6 +49,10 @@ export interface LLMProvider {
   complete(opts: CompleteOptions): Promise<string>;
   mintVoiceToken(opts: VoiceTokenOptions): Promise<VoiceToken>;
   embed(texts: string[]): Promise<number[][]>;
+  /** Grounded web search (googleSearch). Runs OUTSIDE the live voice session —
+   * the live native-audio session can't ground without dropping its socket, so
+   * the voice loop relays this result in via sendClientContent. */
+  searchWeb(query: string): Promise<string>;
 }
 
 const VOICE_TOKEN_LIFETIME_MS = 30 * 60 * 1000; // 30 min absolute
