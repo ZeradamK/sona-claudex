@@ -115,6 +115,7 @@ export default function VoiceTestPage() {
             url={AVATAR_URL}
             active={active}
             getAudioTap={voice.getAudioTap}
+            registerControls={voice.registerAvatarControls}
             onError={() => setAvatarFailed(true)}
             className="h-full w-full"
           />
