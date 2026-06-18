@@ -17,6 +17,12 @@ export type VoiceMode =
   | "thinking"
   | "speaking";
 
+/** The avatar's imperative control surface (TalkingHead), driven by tool calls. */
+export type AvatarControls = {
+  setMood: (mood: string) => void;
+  playGesture: (gesture: string, hand: "left" | "right") => void;
+};
+
 type UseVoiceState = {
   mode: VoiceMode;
   audioLevel: number;
