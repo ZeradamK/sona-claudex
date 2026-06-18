@@ -498,6 +498,15 @@ export function useVoice() {
     return null;
   }, []);
 
+  // SonaAvatar registers its imperative controls here once the head is ready;
+  // model tool calls (set_mood / play_gesture) are routed to them.
+  const registerAvatarControls = useCallback(
+    (controls: AvatarControls | null) => {
+      avatarControlsRef.current = controls;
+    },
+    []
+  );
+
   return {
     mode: state.mode,
     audioLevel: state.audioLevel,
