@@ -18,6 +18,12 @@ import { GoogleGenAI, Modality } from "@google/genai";
 
 import { base64ToBytes, bytesToBase64 } from "@/lib/sona/voice/audio";
 
+export type ToolCallFn = {
+  id?: string;
+  name: string;
+  args: Record<string, unknown>;
+};
+
 export type LiveSessionEvent =
   | { type: "open" }
   | { type: "audioOut"; pcm: Int16Array }
