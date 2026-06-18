@@ -515,10 +515,13 @@ export function useVoice() {
     latencyMs: state.latencyMs,
     seeing: state.seeing,
     cameraError: state.cameraError,
+    searching: state.searching,
     /** Bind to the preview <video>; the same stream is sampled for the model. */
     videoRef: videoElRef,
     /** Live audio tap for avatar lip-sync (null until a session is active). */
     getAudioTap,
+    /** SonaAvatar registers TalkingHead controls so tool calls can drive it. */
+    registerAvatarControls,
     start,
     stop,
     toggle
