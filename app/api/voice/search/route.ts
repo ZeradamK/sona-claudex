@@ -15,3 +15,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "gemini_api_key_missing" }, { status: 503 });
   }
 
+  let query = "";
