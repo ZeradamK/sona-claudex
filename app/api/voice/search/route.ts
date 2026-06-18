@@ -6,3 +6,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
+ * Grounded web search for the voice loop. The live native-audio session can't
+ * ground without dropping its socket, so the client calls this OUTSIDE the
+ * session and relays the answer back in (see useVoice searchAndRelay).
+ */
+export async function POST(req: Request) {
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: "gemini_api_key_missing" }, { status: 503 });
+  }
+
