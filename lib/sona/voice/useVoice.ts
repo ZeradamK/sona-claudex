@@ -34,6 +34,8 @@ type UseVoiceState = {
   seeing: boolean;
   /** Non-fatal camera problem (voice keeps working). */
   cameraError: string | null;
+  /** A grounded web search is running (results will be relayed to her voice). */
+  searching: boolean;
 };
 
 const MIC_TRIGGER = 0.06;
