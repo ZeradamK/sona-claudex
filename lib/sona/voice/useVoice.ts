@@ -63,7 +63,7 @@ function vlog(...args: unknown[]) {
 const SEARCH_DEFERRAL =
   /\b(look(ing)?\s+(that|it|this)\s+up|look\s+up|let me (search|google|check that)|searching (for )?that|i'?ll look (that|it) up|pull (that|it) up)\b/i;
 
-export function useVoice() {
+export function useVoice(opts: { personalityId?: string } = {}) {
   const [state, setState] = useState<UseVoiceState>({
     mode: "idle",
     audioLevel: 0,
@@ -74,6 +74,10 @@ export function useVoice() {
     cameraError: null,
     searching: false
   });
+
+  // Which personality to talk to (Sona, Alfred…); read at token-mint time.
+  const personalityIdRef = useRef(opts.personalityId);
+  personalityIdRef.current = opts.personalityId;
 
   const modeRef = useRef<VoiceMode>("idle");
   const activeRef = useRef(false);
@@ -215,7 +219,11 @@ export function useVoice() {
     setMode("connecting");
 
     async function getToken(): Promise<{ token: string; model: string }> {
-      const tokenRes = await fetch("/api/voice/token", { method: "POST" });
+      const tokenRes = await fetch("/api/voice/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ personalityId: personalityIdRef.current })
+      });
       if (!tokenRes.ok) {
         const data = (await tokenRes.json().catch(() => ({}))) as {
           error?: string;
