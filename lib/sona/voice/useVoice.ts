@@ -71,7 +71,8 @@ export function useVoice() {
     transcript: { user: "", assistant: "" },
     latencyMs: null,
     seeing: false,
-    cameraError: null
+    cameraError: null,
+    searching: false
   });
 
   const modeRef = useRef<VoiceMode>("idle");
