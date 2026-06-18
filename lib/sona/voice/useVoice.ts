@@ -222,105 +222,211 @@ export function useVoice() {
         };
         throw new Error(data.error ?? `token_${tokenRes.status}`);
       }
-      const { token, model } = (await tokenRes.json()) as {
-        token: string;
-        model: string;
-      };
+      return (await tokenRes.json()) as { token: string; model: string };
+    }
+
+    const onEvent = (event: LiveSessionEvent) => {
+      switch (event.type) {
+        case "audioOut":
+          audioOutCountRef.current += 1;
+          if (awaitingFirstAudioRef.current) {
+            awaitingFirstAudioRef.current = false;
+            const ms = performance.now() - userLastSpokeAtRef.current;
+            // Ignore the very first chunk (before the user has spoken).
+            if (ms > 0 && ms < 10000) {
+              setState((s) => ({ ...s, latencyMs: Math.round(ms) }));
+            }
+          }
+          speakerRef.current?.enqueue(event.pcm);
+          break;
+        case "inputTranscript":
+          // New user turn → reset the per-turn utterance + search guard.
+          if (newUserTurnRef.current) {
+            newUserTurnRef.current = false;
+            userUtteranceRef.current = event.text;
+            modelUtteranceRef.current = "";
+            searchedTurnRef.current = false;
+            setState((s) => ({
+              ...s,
+              transcript: { user: event.text, assistant: "" }
+            }));
+          } else {
+            userUtteranceRef.current += event.text;
+            setState((s) => ({
+              ...s,
+              transcript: {
+                ...s.transcript,
+                user: s.transcript.user + event.text
+              }
+            }));
+          }
+          break;
+        case "outputTranscript":
+          // Accumulate her reply; if she defers to a look-up, run the grounded
+          // search on what the user asked and relay the answer back to speak.
+          modelUtteranceRef.current += event.text;
+          if (
+            !searchedTurnRef.current &&
+            userUtteranceRef.current.trim().length > 0 &&
+            SEARCH_DEFERRAL.test(modelUtteranceRef.current)
+          ) {
+            searchedTurnRef.current = true;
+            void searchAndRelay(userUtteranceRef.current);
+          }
+          setState((s) => ({
+            ...s,
+            transcript: {
+              ...s.transcript,
+              assistant: s.transcript.assistant + event.text
+            }
+          }));
+          break;
+        case "interrupted":
+          vlog("interrupted (barge-in) — flushing playback");
+          speakerRef.current?.flush();
+          newUserTurnRef.current = true;
+          break;
+        case "turnComplete":
+          vlog("turnComplete — audio chunks:", audioOutCountRef.current);
+          audioOutCountRef.current = 0;
+          newUserTurnRef.current = true;
+          break;
+        case "toolCall": {
+          // The model is driving its avatar (set_mood / play_gesture).
+          const controls = avatarControlsRef.current;
+          for (const call of event.calls) {
+            try {
+              if (call.name === "set_mood") {
+                controls?.setMood(String(call.args.mood ?? "neutral"));
+              } else if (call.name === "play_gesture") {
+                controls?.playGesture(
+                  String(call.args.gesture ?? ""),
+                  call.args.hand === "left" ? "left" : "right"
+                );
+              }
+            } catch {
+              // avatar not ready / rig lacks the gesture — ignore
+            }
+          }
+          // Acknowledge so the model continues its turn after the side effect.
+          sessionRef.current?.sendToolResponse(
+            event.calls.map((call) => ({
+              id: call.id,
+              name: call.name,
+              response: { ok: true }
+            }))
+          );
+          vlog("toolCall", event.calls.map((c) => c.name).join(","));
+          break;
+        }
+        case "resumeHandle":
+          resumeHandleRef.current = event.handle;
+          break;
+        case "error":
+          vlog("error", event.message);
+          setState((s) => ({ ...s, error: event.message }));
+          void teardown();
+          setMode("idle");
+          break;
+        case "close":
+          vlog("session close — active:", activeRef.current);
+          if (
+            activeRef.current &&
+            resumeHandleRef.current &&
+            !reconnectingRef.current
+          ) {
+            void reconnect();
+          } else if (activeRef.current && !reconnectingRef.current) {
+            void teardown();
+            setMode("idle");
+          }
+          break;
+        case "open":
+          break;
+      }
+    };
+
+    // Grounded web search runs OUTSIDE the live session (which can't ground
+    // without dropping its socket); we relay the answer back in for her to
+    // speak. Triggered when she defers ("let me look that up").
+    async function searchAndRelay(query: string) {
+      setState((s) => ({ ...s, searching: true }));
+      vlog("web search:", query.slice(0, 60));
+      try {
+        const r = await fetch("/api/voice/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+        const data = (await r.json().catch(() => ({}))) as {
+          answer?: string;
+          error?: string;
+        };
+        const answer = (data.answer ?? "").trim();
+        if (answer) {
+          sessionRef.current?.sendClientContent(
+            `(You just looked this up online for them. Here's what the search found: ${answer}\n\n` +
+              `Now tell them what you found, naturally and conversationally — like you're sharing what you just discovered. Don't read out links or say "according to".)`
+          );
+          vlog("relayed search results");
+        } else {
+          sessionRef.current?.sendClientContent(
+            "(The web search didn't turn up a clear answer — let them know you couldn't pull that up right now.)"
+          );
+        }
+      } catch (e) {
+        vlog("search failed", e);
+        sessionRef.current?.sendClientContent(
+          "(The web search failed — let them know you couldn't look that up right now.)"
+        );
+      } finally {
+        setState((s) => ({ ...s, searching: false }));
+      }
+    }
+
+    // Reconnect with the saved resume handle so memory + personality survive the
+    // ~15-min native-audio cap or a network drop. mic/camera/speaker stay up;
+    // only the session swaps (callbacks read sessionRef), so it's near-seamless.
+    async function reconnect() {
+      if (reconnectingRef.current) return;
+      reconnectingRef.current = true;
+      setMode("connecting");
+      try {
+        const t = await getToken();
+        sessionRef.current = await openLiveSession({
+          token: t.token,
+          model: t.model,
+          onEvent,
+          resumeHandle: resumeHandleRef.current ?? undefined
+        });
+        setMode("thinking");
+      } catch (e) {
+        vlog("reconnect failed", e);
+        await teardown();
+        setMode("idle");
+      } finally {
+        reconnectingRef.current = false;
+      }
+    }
+
+    try {
+      const { token, model } = await getToken();
 
       const speaker = new SpeakerPlayback();
       await speaker.start();
       speakerRef.current = speaker;
 
-      const session = await openLiveSession({
-        token,
-        model,
-        onEvent: (event) => {
-          switch (event.type) {
-            case "audioOut":
-              audioOutCountRef.current += 1;
-              if (awaitingFirstAudioRef.current) {
-                awaitingFirstAudioRef.current = false;
-                const ms = performance.now() - userLastSpokeAtRef.current;
-                // Only report plausible round trips (ignore the very first
-                // chunk of a session, before the user has spoken).
-                if (ms > 0 && ms < 10000) {
-                  setState((s) => ({ ...s, latencyMs: Math.round(ms) }));
-                }
-              }
-              speakerRef.current?.enqueue(event.pcm);
-              break;
-            case "inputTranscript":
-              setState((s) => {
-                // New user turn → start a clean exchange instead of appending
-                // to the whole session's worth of text.
-                if (newUserTurnRef.current) {
-                  newUserTurnRef.current = false;
-                  return {
-                    ...s,
-                    transcript: { user: event.text, assistant: "" }
-                  };
-                }
-                return {
-                  ...s,
-                  transcript: {
-                    ...s.transcript,
-                    user: s.transcript.user + event.text
-                  }
-                };
-              });
-              break;
-            case "outputTranscript":
-              setState((s) => ({
-                ...s,
-                transcript: {
-                  ...s.transcript,
-                  assistant: s.transcript.assistant + event.text
-                }
-              }));
-              break;
-            case "interrupted":
-              // Barge-in: stop Sona's audio and treat what comes next as a
-              // fresh user turn.
-              vlog("interrupted (barge-in) — flushing playback");
-              speakerRef.current?.flush();
-              newUserTurnRef.current = true;
-              break;
-            case "turnComplete":
-              // Sona finished her turn; the next user transcript begins a new
-              // exchange. Amplitude pump still derives mode.
-              vlog("turnComplete — audio chunks this turn:", audioOutCountRef.current);
-              audioOutCountRef.current = 0;
-              newUserTurnRef.current = true;
-              break;
-            case "error":
-              vlog("error", event.message);
-              setState((s) => ({ ...s, error: event.message }));
-              void teardown();
-              setMode("idle");
-              break;
-            case "close":
-              vlog("session close — active:", activeRef.current);
-              if (activeRef.current) {
-                void teardown();
-                setMode("idle");
-              }
-              break;
-            case "open":
-              break;
-          }
-        }
-      });
-      sessionRef.current = session;
+      sessionRef.current = await openLiveSession({ token, model, onEvent });
 
       const mic = new MicCapture();
       await mic.start((int16) => {
-        // Echo gate (half-duplex with a barge-in escape hatch). When Sona is
+        // Echo gate (half-duplex with a barge-in escape hatch). While Sona is
         // speaking, drop mic frames unless the user is clearly louder than her
         // echo — otherwise her own voice loops back into Gemini as input.
-        const speaker = speakerRef.current;
+        const speakerNow = speakerRef.current;
         const sonaSpeaking =
-          (speaker?.remaining() ?? 0) > SPEAKER_REMAINING_MIN ||
-          (speaker?.level() ?? 0) > 0.01;
+          (speakerNow?.remaining() ?? 0) > SPEAKER_REMAINING_MIN ||
+          (speakerNow?.level() ?? 0) > 0.01;
         if (sonaSpeaking && mic.level() < BARGE_IN_LEVEL) return;
         sessionRef.current?.sendPcm(int16);
       });
