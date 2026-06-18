@@ -53,22 +53,32 @@ type ConnectArgs = {
   token: string;
   model: string;
   onEvent: (event: LiveSessionEvent) => void;
+  /** Resume a prior session (preserves context across a reconnect). */
+  resumeHandle?: string;
 };
 
 export async function openLiveSession({
   token,
   model,
-  onEvent
+  onEvent,
+  resumeHandle
 }: ConnectArgs): Promise<LiveSessionHandle> {
   const ai = new GoogleGenAI({
     apiKey: token,
     apiVersion: "v1alpha"
   });
 
+  // Once the socket closes, sends would spam "WebSocket is already CLOSED"
+  // (the mic/camera keep firing). Gate every send on this so a drop is silent.
+  let open = false;
+
   const session = await ai.live.connect({
     model,
     callbacks: {
-      onopen: () => onEvent({ type: "open" }),
+      onopen: () => {
+        open = true;
+        onEvent({ type: "open" });
+      },
       onmessage: (msg) => {
         const serverContent = (
           msg as unknown as { serverContent?: Record<string, unknown> }
