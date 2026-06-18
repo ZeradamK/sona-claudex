@@ -85,8 +85,58 @@ const VAD_CONFIG = {
   endOfSpeechSensitivity:
     process.env.SONA_VAD_END_SENSITIVITY ?? "END_SENSITIVITY_LOW",
   prefixPaddingMs: Number(process.env.SONA_VAD_PREFIX_PADDING_MS ?? 300),
-  silenceDurationMs: Number(process.env.SONA_VAD_SILENCE_MS ?? 500)
+  silenceDurationMs: Number(process.env.SONA_VAD_SILENCE_MS ?? 300)
 } as const;
+
+/**
+ * Avatar control tools. The live model calls these to drive its own face and
+ * body — so expression is tied to what it actually feels/sees, not faked from
+ * audio. The client routes the calls to TalkingHead (setMood / playGesture).
+ */
+const AVATAR_TOOLS = [
+  {
+    functionDeclarations: [
+      {
+        name: "set_mood",
+        description:
+          "Set your facial expression to match how you feel right now. Call it whenever your feeling shifts so your face fits your words — smile when you're warm or pleased, soften when gentle, etc. Default back to neutral when calm.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            mood: {
+              type: "STRING",
+              enum: ["neutral", "happy", "love", "sad", "angry", "fear", "disgust"],
+              description:
+                "happy = smiling and warm; love = affectionate/fond; neutral = calm and pleasant."
+            }
+          },
+          required: ["mood"]
+        }
+      },
+      {
+        name: "play_gesture",
+        description:
+          "Play a natural hand/body gesture to react and punctuate, like a person would. Wave back with 'handup' when greeted or when you SEE the person wave at the camera; 'thumbup' to approve; 'ok'; 'shrug' when unsure; 'index' to point a thought. Use them sparingly and naturally.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            gesture: {
+              type: "STRING",
+              enum: ["handup", "index", "ok", "thumbup", "thumbdown", "side", "shrug"],
+              description: "handup = raise hand / wave hello."
+            },
+            hand: {
+              type: "STRING",
+              enum: ["left", "right"],
+              description: "Optional. Which hand; defaults to right for a natural wave."
+            }
+          },
+          required: ["gesture"]
+        }
+      }
+    ]
+  }
+];
 
 class GeminiProvider implements LLMProvider {
   readonly id = "gemini";
