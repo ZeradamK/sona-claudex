@@ -40,6 +40,12 @@ export type LiveSessionHandle = {
   sendPcm: (int16: Int16Array) => void;
   /** Send one camera frame (base64 JPEG) so the model can see the user/room. */
   sendVideoFrame: (jpegBase64: string) => void;
+  /** Inject a text turn (e.g. relay grounded web-search results to speak). */
+  sendClientContent: (text: string) => void;
+  /** Reply to a model tool call so it keeps going after the side effect runs. */
+  sendToolResponse: (
+    responses: Array<{ id?: string; name: string; response: Record<string, unknown> }>
+  ) => void;
   close: () => void;
 };
 
