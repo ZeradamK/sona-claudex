@@ -66,11 +66,12 @@ const VOICE_SESSION_START_WINDOW_MS = 60 * 1000; // 60 s to open the WS
  *  - END_SENSITIVITY_LOW     → be PATIENT about deciding the user is done.
  *    The HIGH/600ms default cuts people off mid-thought; LOW + a longer
  *    silence window lets them breathe, pause, and gather a sentence.
- *  - silenceDurationMs 500   → ms of trailing silence before Sona takes the
- *    turn. This is THE response-latency lever: every turn waits this long after
- *    you stop before she starts. 500 + END_SENSITIVITY_LOW is the sweet spot —
- *    snappy without cutting thoughtful pauses. Raise toward 700 in a noisy room
- *    if she jumps in early; drop toward 400 to feel even faster.
+ *  - silenceDurationMs 300   → ms of trailing silence before Sona takes the
+ *    turn. THE response-latency lever: every turn waits this long after you stop
+ *    before she starts. 300 + END_SENSITIVITY_LOW feels near-instant while still
+ *    not cutting mid-word. Raise toward 500–700 in a noisy room if she jumps in
+ *    early; she already processes your speech AS you talk, so this is just the
+ *    end-of-turn gate, not thinking time.
  *  - prefixPaddingMs 300     → audio kept before speech onset so the first
  *    syllable is never clipped.
  *
