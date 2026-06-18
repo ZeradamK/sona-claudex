@@ -20,6 +20,8 @@
 
 import { useEffect, useRef } from "react";
 
+import type { AvatarControls } from "@/lib/sona/voice/useVoice";
+
 type AudioTap = { ctx: AudioContext; node: AudioNode };
 
 type MorphTarget = { newvalue: number; needsUpdate: boolean };
