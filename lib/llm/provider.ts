@@ -181,6 +181,16 @@ class GeminiProvider implements LLMProvider {
       authTokens: { create: (args: unknown) => Promise<{ name: string }> };
     };
 
+    // Tools for the live session — both OPT-IN. Verified the hard way (headless
+    // browser): in the realtime native-audio bidi flow, BOTH googleSearch
+    // grounding AND custom functionDeclarations drop the WebSocket the moment
+    // they fire, and she goes silent — even though both work in one-shot API
+    // turns. So real web search can't live inside this session today; it needs a
+    // separate grounded call relayed in (see notes). Left gated for experiments.
+    const tools: unknown[] = [];
+    if (process.env.SONA_WEB_SEARCH === "1") tools.push({ googleSearch: {} });
+    if (process.env.SONA_AVATAR_TOOLS === "1") tools.push(...AVATAR_TOOLS);
+
     const token = await ai.authTokens.create({
       config: {
         uses: 1,
