@@ -80,7 +80,10 @@ export async function POST(req: Request) {
     .slice(-HISTORY_LIMIT)
     .map((m) => ({ role: m.role, content: m.content }));
 
-  let systemInstruction = buildPersona(persistContext?.profile ?? null);
+  let systemInstruction = buildPersona(
+    undefined,
+    persistContext?.profile ?? null
+  );
   // Inject the household's most relevant memories (top-K vector search) so Sona
   // answers with context — the memory wedge. Only when we have a DB-backed
   // household; degrades silently otherwise.
