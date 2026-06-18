@@ -114,22 +114,49 @@ export async function openLiveSession({
 
         if (serverContent?.turnComplete) onEvent({ type: "turnComplete" });
         if (serverContent?.interrupted) onEvent({ type: "interrupted" });
+
+        // Tool calls — the model driving its avatar (set_mood / play_gesture).
+        const toolCall = (
+          msg as unknown as {
+            toolCall?: { functionCalls?: ToolCallFn[] };
+          }
+        ).toolCall;
+        if (toolCall?.functionCalls?.length) {
+          onEvent({ type: "toolCall", calls: toolCall.functionCalls });
+        }
+
+        // Session-resumption handle — save it so we can reconnect with context.
+        const resumption = (
+          msg as unknown as {
+            sessionResumptionUpdate?: { resumable?: boolean; newHandle?: string };
+          }
+        ).sessionResumptionUpdate;
+        if (resumption?.resumable && resumption.newHandle) {
+          onEvent({ type: "resumeHandle", handle: resumption.newHandle });
+        }
       },
       onerror: (e: unknown) => {
+        open = false;
         const message =
           (e as { message?: string })?.message ??
           (e instanceof Error ? e.message : "live_error");
         onEvent({ type: "error", message });
       },
-      onclose: () => onEvent({ type: "close" })
+      onclose: () => {
+        open = false;
+        onEvent({ type: "close" });
+      }
     },
     config: {
-      responseModalities: [Modality.AUDIO]
+      responseModalities: [Modality.AUDIO],
+      // Resume prior context when reconnecting; {} just enables handles.
+      sessionResumption: resumeHandle ? { handle: resumeHandle } : {}
     }
   });
 
   return {
     sendPcm: (int16: Int16Array) => {
+      if (!open) return;
       const bytes = new Uint8Array(
         int16.buffer,
         int16.byteOffset,
