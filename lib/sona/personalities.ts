@@ -29,9 +29,15 @@ const SONA_AVATAR =
   process.env.NEXT_PUBLIC_SONA_AVATAR_URL ??
   "https://cdn.jsdelivr.net/gh/met4citizen/HeadAudio@main/avatars/julia.glb";
 
+// A distinguished man in a navy suit, white shirt, tie + glasses (verified male,
+// full ARKit+Oculus visemes, RPM/Wolf3D rig — renders + lip-syncs in TalkingHead
+// with body:"M"). For an exact "older, gray, black-tux" Alfred, export one from
+// Avaturn and set NEXT_PUBLIC_ALFRED_AVATAR_URL. Alt verified male GLBs:
+//   basimakram/talking-ai-avatar avatar9.glb (bearded/mature), avatar6.glb (glasses),
+//   met4citizen/TalkingHead avatars/avatarsdk.glb (young, plain).
 const ALFRED_AVATAR =
   process.env.NEXT_PUBLIC_ALFRED_AVATAR_URL ??
-  "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@main/avatars/avaturn.glb";
+  "https://cdn.jsdelivr.net/gh/khaledalam/avatoon@main/example/public/avatar.glb";
 
 export const PERSONALITIES: Personality[] = [
   {
