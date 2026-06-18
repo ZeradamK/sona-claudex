@@ -59,6 +59,7 @@ export function SonaAvatar({
   url,
   active,
   getAudioTap,
+  registerControls,
   className,
   onReady,
   onError
