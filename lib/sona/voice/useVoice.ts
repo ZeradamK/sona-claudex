@@ -435,26 +435,27 @@ export function useVoice() {
       activeRef.current = true;
       setMode("thinking");
 
-      // Camera: stream ~1 fps frames so the model can SEE the user and room.
-      // Its own try/catch — a denied/again-missing camera must never tear down
-      // the voice session; we surface it non-fatally instead.
-      try {
-        const camera = new CameraCapture();
-        await camera.start({
-          videoEl: videoElRef.current,
-          onFrame: (frame) => sessionRef.current?.sendVideoFrame(frame.data),
-          // 2 fps gives her fresher visual context (more reactive to what she
-          // sees) at modest image-token cost. Tune via env.
-          fps: Number(process.env.NEXT_PUBLIC_SONA_CAMERA_FPS ?? 2)
-        });
-        cameraRef.current = camera;
-        setState((s) => ({ ...s, seeing: true, cameraError: null }));
-        vlog("camera streaming frames to model");
-      } catch (camErr) {
-        const msg =
-          camErr instanceof Error ? camErr.message : "camera_failed";
-        vlog("camera failed", msg);
-        setState((s) => ({ ...s, seeing: false, cameraError: msg }));
+      // Camera: stream frames so the model can SEE the user and room. Each
+      // frame is image context the model must prefill before replying, so it
+      // adds response latency — keep fps low, and allow disabling it entirely
+      // (NEXT_PUBLIC_SONA_CAMERA=0) for the snappiest voice-only mode. Its own
+      // try/catch — a denied camera must never tear down the voice session.
+      if (process.env.NEXT_PUBLIC_SONA_CAMERA !== "0") {
+        try {
+          const camera = new CameraCapture();
+          await camera.start({
+            videoEl: videoElRef.current,
+            onFrame: (frame) => sessionRef.current?.sendVideoFrame(frame.data),
+            fps: Number(process.env.NEXT_PUBLIC_SONA_CAMERA_FPS ?? 1)
+          });
+          cameraRef.current = camera;
+          setState((s) => ({ ...s, seeing: true, cameraError: null }));
+          vlog("camera streaming frames to model");
+        } catch (camErr) {
+          const msg = camErr instanceof Error ? camErr.message : "camera_failed";
+          vlog("camera failed", msg);
+          setState((s) => ({ ...s, seeing: false, cameraError: msg }));
+        }
       }
     } catch (err) {
       const message =
