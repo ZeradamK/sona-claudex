@@ -16,3 +16,4 @@ export async function POST(req: Request) {
   }
 
   let query = "";
+  try {
