@@ -28,3 +28,4 @@ export async function POST(req: Request) {
 
   try {
     const answer = await getLLMProvider().searchWeb(query.slice(0, 500));
+    return NextResponse.json({ answer });
