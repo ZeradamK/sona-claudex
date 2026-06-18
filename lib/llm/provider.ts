@@ -249,6 +249,20 @@ class GeminiProvider implements LLMProvider {
     return res.text ?? "";
   }
 
+  async searchWeb(query: string): Promise<string> {
+    const res = await this.client.models.generateContent({
+      model: GEMINI_MODELS.flash,
+      contents: [{ role: "user", parts: [{ text: query }] }],
+      config: {
+        tools: [{ googleSearch: {} }],
+        systemInstruction:
+          "Search the web and answer the user's request with current, factual" +
+          " info. Be concise — a few spoken sentences. No markdown or links."
+      }
+    });
+    return res.text ?? "";
+  }
+
   async embed(texts: string[]): Promise<number[][]> {
     const out: number[][] = [];
     for (const text of texts) {
