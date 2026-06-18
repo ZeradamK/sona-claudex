@@ -31,6 +31,8 @@ export type LiveSessionEvent =
   | { type: "outputTranscript"; text: string }
   | { type: "turnComplete" }
   | { type: "interrupted" }
+  | { type: "toolCall"; calls: ToolCallFn[] }
+  | { type: "resumeHandle"; handle: string }
   | { type: "error"; message: string }
   | { type: "close" };
 
