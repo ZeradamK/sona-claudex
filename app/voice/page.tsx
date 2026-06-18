@@ -1,13 +1,10 @@
 "use client";
 
 /**
- * /voice — Sona's voice-first face. A WALL-E-style robot face (expressive eyes
- * + a mouth that moves with her voice), a live camera view so she can SEE you,
- * one talk button, the running transcript, and a voice-to-voice latency HUD.
- *
- * The camera stream is both previewed here AND sampled to ~1 fps JPEG frames
- * that are sent to the Gemini Live session (useVoice), so the agent literally
- * sees the user and the room. This is the page the Raspberry Pi boots into.
+ * /voice — the voice-first stage. Pick a personality (Sona, Alfred, …) from the
+ * character bar; each has its own 3D avatar, voice, persona and theme. The
+ * selected character's avatar is lip-synced to its live Gemini voice; a live
+ * camera view lets it SEE you. This is the page the Raspberry Pi boots into.
  */
 
 import { Camera, CameraOff, Mic, Square } from "lucide-react";
@@ -15,6 +12,7 @@ import { useState } from "react";
 
 import { SonaAvatar } from "@/components/avatar/SonaAvatar";
 import { RobotFace } from "@/components/face/RobotFace";
+import { PERSONALITIES, getPersonality } from "@/lib/sona/personalities";
 import { useVoice, type VoiceMode } from "@/lib/sona/voice/useVoice";
 import { cn } from "@/lib/utils";
 
@@ -26,19 +24,21 @@ const LABEL: Record<VoiceMode, string> = {
   speaking: "Speaking"
 };
 
-// The 3D human avatar GLB. Default is a free female sample (proven with HeadAudio
-// real-time lip-sync); drop in your own Avaturn "businesswoman in a black suit"
-// export and set NEXT_PUBLIC_SONA_AVATAR_URL to it. Must have ARKit + Oculus
-// visemes and a Mixamo-compatible rig (Avaturn / RPM exports do).
-const AVATAR_URL =
-  process.env.NEXT_PUBLIC_SONA_AVATAR_URL ??
-  "https://cdn.jsdelivr.net/gh/met4citizen/HeadAudio@main/avatars/julia.glb";
-
 export default function VoiceTestPage() {
-  const voice = useVoice();
+  const [personalityId, setPersonalityId] = useState(PERSONALITIES[0].id);
+  const current = getPersonality(personalityId);
+  const voice = useVoice({ personalityId });
   const active = voice.mode !== "idle";
   const [avatarFailed, setAvatarFailed] = useState(false);
 
+  // Switch characters only between conversations (each session pins a persona).
+  function pick(id: string) {
+    if (active || id === personalityId) return;
+    setAvatarFailed(false);
+    setPersonalityId(id);
+  }
+
+  const accent = current.accent;
   const banner = voice.error
     ? voice.error === "gemini_api_key_missing"
       ? "Add GEMINI_API_KEY to .env.local and restart the dev server."
@@ -51,16 +51,28 @@ export default function VoiceTestPage() {
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-bg text-text">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(34,211,238,0.10),transparent_28rem),radial-gradient(circle_at_50%_84%,rgba(245,165,36,0.08),transparent_30rem)]" />
+      <div
+        className="pointer-events-none absolute inset-0 transition-[background] duration-700"
+        style={{
+          background: `radial-gradient(circle at 50% 14%, ${current.glow}, transparent 30rem), radial-gradient(circle at 50% 96%, ${current.glow}, transparent 32rem)`
+        }}
+      />
 
       {/* Status row */}
       <header className="relative z-20 flex h-16 items-center justify-between px-5 sm:px-8">
-        <div className="text-sm font-medium">Sona · voice lab</div>
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span
+            className="size-2 rounded-full"
+            style={{ background: accent, boxShadow: `0 0 10px ${accent}` }}
+          />
+          {current.name}
+          <span className="text-text-tertiary">· {current.role}</span>
+        </div>
         <div className="flex items-center gap-2">
           {voice.latencyMs !== null && (
             <div
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface/70 px-3 py-1.5 text-sm tabular-nums text-text-secondary backdrop-blur"
-              title="Voice-to-voice round trip: you stopped → Sona started"
+              title="Voice-to-voice round trip"
             >
               <span className="text-text-tertiary">↻</span>
               {voice.latencyMs} ms
@@ -70,40 +82,44 @@ export default function VoiceTestPage() {
             <div
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm backdrop-blur",
-                voice.seeing
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                  : "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                voice.searching
+                  ? "border-sky-400/30 bg-sky-500/10 text-sky-200"
+                  : voice.seeing
+                    ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                    : "border-amber-400/30 bg-amber-500/10 text-amber-200"
               )}
-              title={voice.seeing ? "Camera streaming to the agent" : "Camera off"}
             >
-              {voice.seeing ? (
-                <Camera className="size-3.5" aria-hidden="true" />
+              {voice.searching ? (
+                <>🔎 Searching…</>
+              ) : voice.seeing ? (
+                <>
+                  <Camera className="size-3.5" aria-hidden="true" /> Seeing you
+                </>
               ) : (
-                <CameraOff className="size-3.5" aria-hidden="true" />
+                <>
+                  <CameraOff className="size-3.5" aria-hidden="true" /> No camera
+                </>
               )}
-              {voice.seeing ? "Seeing you" : "No camera"}
             </div>
           )}
           <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface/70 px-3 py-1.5 text-sm text-text-secondary backdrop-blur">
             <span
-              className={cn(
-                "size-2 rounded-full transition-colors",
-                voice.mode === "listening" && "bg-cyan-300",
-                (voice.mode === "thinking" || voice.mode === "connecting") &&
-                  "bg-accent-warm",
-                voice.mode === "speaking" && "bg-accent",
-                voice.mode === "idle" && "bg-text-tertiary",
-                banner && "bg-red-400"
-              )}
+              className="size-2 rounded-full transition-colors"
+              style={{
+                background: banner
+                  ? "#f87171"
+                  : active
+                    ? accent
+                    : "rgba(255,255,255,0.25)"
+              }}
             />
             {banner ? "Error" : LABEL[voice.mode]}
           </div>
         </div>
       </header>
 
-      {/* The avatar — a real 3D human, lip-synced to Sona's live voice.
-          Falls back to the lightweight robot face if the GLB can't load. */}
-      <div className="relative z-10 mx-auto mt-1 flex h-[58vh] max-h-[620px] w-full max-w-[560px] items-center justify-center">
+      {/* The selected character's 3D avatar (lip-synced). Robot-face fallback. */}
+      <div className="relative z-10 mx-auto mt-1 flex h-[52vh] max-h-[560px] w-full max-w-[560px] items-center justify-center">
         {avatarFailed ? (
           <RobotFace
             mode={voice.mode}
@@ -112,7 +128,8 @@ export default function VoiceTestPage() {
           />
         ) : (
           <SonaAvatar
-            url={AVATAR_URL}
+            key={current.avatarUrl}
+            url={current.avatarUrl}
             active={active}
             getAudioTap={voice.getAudioTap}
             registerControls={voice.registerAvatarControls}
@@ -122,7 +139,7 @@ export default function VoiceTestPage() {
         )}
       </div>
 
-      {/* Live camera view — bound to the same stream sampled for the model */}
+      {/* Live camera view */}
       <div
         className={cn(
           "absolute right-5 top-20 z-20 overflow-hidden rounded-xl border shadow-[0_18px_80px_rgba(0,0,0,0.4)] backdrop-blur transition-opacity sm:right-8",
@@ -144,8 +161,8 @@ export default function VoiceTestPage() {
         </div>
       </div>
 
-      {/* Transcript + controls */}
-      <section className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-end gap-4 px-5 pb-10 sm:px-8">
+      {/* Controls + character select */}
+      <section className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-end gap-4 px-5 pb-8 sm:px-8">
         {banner && (
           <div className="mx-auto w-full rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
             {banner}
@@ -153,36 +170,30 @@ export default function VoiceTestPage() {
         )}
         {active && voice.cameraError && (
           <div className="mx-auto w-full rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-            Camera unavailable ({voice.cameraError}). Sona can hear you but
-            can&apos;t see — allow camera access and reconnect.
+            Camera unavailable ({voice.cameraError}). {current.name} can hear you
+            but can&apos;t see — allow camera access and reconnect.
           </div>
         )}
 
         {!active && (
           <p className="text-center text-sm text-text-tertiary">
-            Tap to talk. Sona will see you through the camera and hear you.
+            {current.tagline} Tap to talk.
           </p>
         )}
 
-        <div className="flex flex-col items-center gap-3">
+        {/* Talk button — themed to the character */}
+        <div className="flex flex-col items-center gap-2">
           <button
             aria-label={active ? "End conversation" : "Start talking"}
-            className={cn(
-              "grid size-20 place-items-center rounded-full border transition-colors",
-              voice.mode === "idle" &&
-                "border-border bg-surface/80 text-text hover:bg-surface-2",
-              voice.mode === "connecting" &&
-                "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
-              voice.mode === "listening" &&
-                "border-cyan-300/40 bg-cyan-300/10 text-cyan-200",
-              voice.mode === "thinking" &&
-                "border-accent-warm/40 bg-accent-warm/10 text-accent-warm",
-              voice.mode === "speaking" &&
-                "border-accent/40 bg-accent/10 text-accent"
-            )}
-            onClick={() => {
-              void voice.toggle();
+            className="grid size-20 place-items-center rounded-full border bg-surface/80 transition-colors hover:bg-surface-2"
+            style={{
+              borderColor: voice.mode === "idle" ? "rgba(255,255,255,0.12)" : accent,
+              color: voice.mode === "idle" ? undefined : accent,
+              background:
+                voice.mode === "idle" ? undefined : `${current.glow}`,
+              boxShadow: active ? `0 0 30px ${current.glow}` : undefined
             }}
+            onClick={() => void voice.toggle()}
             type="button"
           >
             {voice.mode === "idle" ? (
@@ -194,6 +205,59 @@ export default function VoiceTestPage() {
           <span className="text-xs text-text-tertiary">
             {active ? "Tap to end" : "Tap to talk"}
           </span>
+        </div>
+
+        {/* Character bar — switch personalities when idle */}
+        <div className="mx-auto mt-1 flex items-stretch justify-center gap-3">
+          {PERSONALITIES.map((p) => {
+            const sel = p.id === personalityId;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                disabled={active}
+                onClick={() => pick(p.id)}
+                className={cn(
+                  "flex w-44 items-center gap-3 rounded-xl border bg-surface/60 px-3 py-2.5 text-left backdrop-blur transition-all",
+                  active
+                    ? sel
+                      ? "opacity-100"
+                      : "cursor-not-allowed opacity-30"
+                    : "hover:bg-surface-2"
+                )}
+                style={
+                  sel
+                    ? {
+                        borderColor: p.accent,
+                        boxShadow: `inset 0 0 0 1px ${p.accent}, 0 12px 40px ${p.glow}`
+                      }
+                    : { borderColor: "rgba(255,255,255,0.08)" }
+                }
+              >
+                <span
+                  className="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold"
+                  style={{
+                    background: p.glow,
+                    color: p.accent,
+                    border: `1px solid ${p.accent}66`
+                  }}
+                >
+                  {p.name[0]}
+                </span>
+                <span className="min-w-0">
+                  <span
+                    className="block truncate text-sm font-semibold"
+                    style={{ color: sel ? p.accent : undefined }}
+                  >
+                    {p.name}
+                  </span>
+                  <span className="block truncate text-[11px] text-text-tertiary">
+                    {p.role} · {p.gender === "male" ? "♂" : "♀"} voice
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
     </main>
