@@ -212,7 +212,17 @@ class GeminiProvider implements LLMProvider {
             // Server-side VAD owns all turn-taking; the client just streams.
             realtimeInputConfig: {
               automaticActivityDetection: VAD_CONFIG
-            }
+            },
+            // Web search (googleSearch) on by default — safe with native-audio.
+            // Avatar function-call tools are still OPT-IN (SONA_AVATAR_TOOLS=1):
+            // their client tool-response handshake drops the WebSocket and she
+            // stops speaking. Disable web search with SONA_WEB_SEARCH=0.
+            ...(tools.length ? { tools } : {}),
+            // Session resumption is safe and stays on (SONA_SESSION_RESUMPTION=0
+            // to disable).
+            ...(process.env.SONA_SESSION_RESUMPTION === "0"
+              ? {}
+              : { sessionResumption: {} })
           }
         }
       }
