@@ -17,3 +17,4 @@ export async function POST(req: Request) {
 
   let query = "";
   try {
+    const body = (await req.json()) as { query?: string };
