@@ -170,6 +170,7 @@ export async function openLiveSession({
       });
     },
     sendVideoFrame: (jpegBase64: string) => {
+      if (!open) return;
       // Same realtime-input channel as audio; the model fuses vision with the
       // spoken turn. `media` is the canonical field for still frames (serializes
       // to mediaChunks[]); data is RAW base64, no data: URL prefix. ~1 fps from
