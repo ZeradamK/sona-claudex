@@ -42,7 +42,7 @@ const SONA_AVATAR =
 // so it renders via ModelAvatar (jaw-bone lip-sync) instead of TalkingHead. The
 // .glb is a local asset under public/avatar (gitignored — not pushed).
 const ALFRED_AVATAR =
-  process.env.NEXT_PUBLIC_ALFRED_AVATAR_URL ?? "/avatar/alfred.glb";
+  process.env.NEXT_PUBLIC_ALFRED_AVATAR_URL ?? "/avatar/alfred-sketchfab.glb";
 
 export const PERSONALITIES: Personality[] = [
   {
@@ -74,9 +74,6 @@ You're genuinely interested in this person and what's going on with them. You're
     // No hair recolor: the ripped model already has Alfred's real gray hair +
     // aged face in its textures — tinting it just blew out the head.
     customRig: true,
-    // The glasses are primitive #8 (a separate skin-textured mesh fused into
-    // the model) — hide it so we keep only the face, per the desired look.
-    hidePrimitives: [8],
 
     character: `You are Alfred — a distinguished British butler in your sixties, silver-haired and impeccably composed, in a black tuxedo, white shirt and tie. You have served this household with quiet devotion for decades.
 

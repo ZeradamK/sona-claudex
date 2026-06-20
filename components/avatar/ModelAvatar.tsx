@@ -179,6 +179,32 @@ export function ModelAvatar({
         camera.position.set(target.x, target.y + size.y * 0.01, target.z + maxDim * 0.52);
         camera.lookAt(target);
 
+        // Rig-less models (e.g. a static Sketchfab mesh with 0 bones / 0 visemes)
+        // can't lip-sync — there's no geometry to move. To keep them from being a
+        // frozen statue we sway/bob the WHOLE model about the head, and bob more
+        // when speech is flowing so it reads as engaged. Pivot at the head so the
+        // rotation looks like a head/torso lean, not an orbit.
+        const rigless =
+          !jaw &&
+          !neckUpper &&
+          !spineUpper &&
+          eyeballs.length === 0 &&
+          upperEyelids.length === 0;
+        type Pivot = {
+          rotation: { x: number; y: number };
+          position: { y: number };
+        };
+        let pivot: Pivot | null = null;
+        if (rigless) {
+          const g = new THREE.Group();
+          g.position.copy(target);
+          model.position.sub(target); // keep world position; head sits at pivot
+          g.add(model);
+          scene.add(g);
+          pivot = g as unknown as Pivot;
+        }
+        const pivotBaseY = pivot ? pivot.position.y : 0;
+
         // Audio analyser on the speech tap.
         let analyser: AnalyserNode | null = null;
         let abuf: Float32Array<ArrayBuffer> | null = null;
@@ -307,6 +333,14 @@ export function ModelAvatar({
           if (spineMiddle) {
             const sb = spineMiddle as Bone;
             sb.rotation.x = sb.userData.rx + breath * 0.6;
+          }
+
+          // Rig-less fallback (no bones): lean/bob the whole model about the head,
+          // more when speech is flowing — engaged, even without a moving mouth.
+          if (pivot) {
+            pivot.rotation.y = Math.sin(t * 0.5) * 0.03 + open * Math.sin(t * 3.5) * 0.025;
+            pivot.rotation.x = Math.sin(t * 0.7) * 0.014 + open * 0.012;
+            pivot.position.y = pivotBaseY + Math.sin(t * 0.8) * 0.004;
           }
 
           renderer.render(scene, camera);

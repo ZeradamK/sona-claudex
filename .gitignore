@@ -30,3 +30,4 @@ tsconfig.tsbuildinfo
 
 # Local game-ripped Alfred model (not republished)
 public/avatar/alfred.glb
+public/avatar/alfred-sketchfab.glb
