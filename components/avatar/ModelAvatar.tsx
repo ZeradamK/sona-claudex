@@ -135,7 +135,6 @@ export function ModelAvatar({
         let neckLower: Bone | null = null;
         let spineUpper: Bone | null = null;
         let spineMiddle: Bone | null = null;
-        let headBone: { getWorldPosition: (v: unknown) => void } | null = null;
         model.traverse((o: unknown) => {
           const n = o as Bone & {
             isBone?: boolean;
@@ -161,29 +160,32 @@ export function ModelAvatar({
           else if (/neck lower/.test(name)) neckLower = neckLower ?? n;
           else if (/spine upper/.test(name)) spineUpper = spineUpper ?? n;
           else if (/spine middle/.test(name)) spineMiddle = spineMiddle ?? n;
-          if (/neck upper|^head$/.test(name))
-            headBone = n as unknown as { getWorldPosition: (v: unknown) => void };
         });
 
-        // Frame the head + shoulders.
+        // Frame the FULL body, centered: fit the whole height (+ margin) in view
+        // and look at the model's center so the entire figure sits on screen.
         const box = new THREE.Box3().setFromObject(model);
         const size = new THREE.Vector3();
         const center = new THREE.Vector3();
         box.getSize(size);
         box.getCenter(center);
-        const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        const target = new THREE.Vector3();
-        const hb = headBone as { getWorldPosition: (v: unknown) => void } | null;
-        if (hb) hb.getWorldPosition(target);
-        else target.set(center.x, box.min.y + size.y * 0.86, center.z);
-        camera.position.set(target.x, target.y + size.y * 0.01, target.z + maxDim * 0.52);
+        const vFov = (camera.fov * Math.PI) / 180;
+        const tanV = Math.tan(vFov / 2);
+        const margin = 1.12;
+        const distH = (size.y * margin) / 2 / tanV;
+        const distW = (size.x * margin) / 2 / (tanV * camera.aspect);
+        const dist = Math.max(distH, distW);
+        const target = center.clone();
+        camera.position.set(center.x, center.y, center.z + dist);
         camera.lookAt(target);
 
         // Rig-less models (e.g. a static Sketchfab mesh with 0 bones / 0 visemes)
-        // can't lip-sync — there's no geometry to move. To keep them from being a
-        // frozen statue we sway/bob the WHOLE model about the head, and bob more
-        // when speech is flowing so it reads as engaged. Pivot at the head so the
-        // rotation looks like a head/torso lean, not an orbit.
+        // get two fallbacks so they don't read as a frozen statue:
+        //   1) a gentle full-body sway about the model's center, stronger while
+        //      speech flows (engaged body language), and
+        //   2) a PROCEDURAL MOUTH — we displace the lower-front face vertices of
+        //      the head mesh downward with speech volume to fake a jaw drop, since
+        //      there are no bones or visemes to drive a real one.
         const rigless =
           !jaw &&
           !neckUpper &&
@@ -197,13 +199,63 @@ export function ModelAvatar({
         let pivot: Pivot | null = null;
         if (rigless) {
           const g = new THREE.Group();
-          g.position.copy(target);
-          model.position.sub(target); // keep world position; head sits at pivot
+          g.position.copy(target); // pivot at body center → natural sway
+          model.position.sub(target); // keep world position
           g.add(model);
           scene.add(g);
           pivot = g as unknown as Pivot;
         }
         const pivotBaseY = pivot ? pivot.position.y : 0;
+
+        // Procedural-mouth setup: find the head/skin mesh and the lower-front-face
+        // vertices (chin → mouth line, front-facing), weighted so the chin drops
+        // most. Computed once; the tick loop just scales the drop by speech.
+        type PosAttr = { array: Float32Array; count: number; needsUpdate: boolean };
+        type SkinMesh = {
+          isMesh?: boolean;
+          name?: string;
+          updateWorldMatrix?: (a: boolean, b: boolean) => void;
+          localToWorld: (v: unknown) => unknown;
+          getWorldScale: (v: unknown) => void;
+          geometry?: { attributes?: { position?: PosAttr } };
+        };
+        let jawPos: PosAttr | null = null;
+        let jawOrig: Float32Array | null = null;
+        const jawIdx: number[] = [];
+        const jawW: number[] = [];
+        let jawDrop = 0;
+        if (rigless) {
+          let headMesh: SkinMesh | null = null;
+          model.traverse((o: unknown) => {
+            const m = o as SkinMesh;
+            if (m.isMesh && /skin|face|head/i.test(m.name || "") && !headMesh)
+              headMesh = m;
+          });
+          const hm = headMesh as SkinMesh | null;
+          const pos = hm?.geometry?.attributes?.position ?? null;
+          if (hm && pos) {
+            hm.updateWorldMatrix?.(true, false);
+            const orig = Float32Array.from(pos.array);
+            const tmp = new THREE.Vector3();
+            const headH = size.y * 0.13; // head ≈ 13% of standing height
+            const chinYw = box.max.y - headH;
+            const mouthYw = chinYw + headH * 0.36;
+            const frontZ = center.z;
+            for (let i = 0; i < pos.count; i++) {
+              tmp.set(orig[i * 3], orig[i * 3 + 1], orig[i * 3 + 2]);
+              hm.localToWorld(tmp);
+              if (tmp.y >= chinYw && tmp.y <= mouthYw && tmp.z > frontZ) {
+                jawIdx.push(i);
+                jawW.push((mouthYw - tmp.y) / (mouthYw - chinYw)); // 1 chin→0 mouth
+              }
+            }
+            const ws = new THREE.Vector3();
+            hm.getWorldScale(ws);
+            jawDrop = (size.y * 0.024) / (ws.y || 1);
+            jawPos = pos;
+            jawOrig = orig;
+          }
+        }
 
         // Audio analyser on the speech tap.
         let analyser: AnalyserNode | null = null;
@@ -335,12 +387,26 @@ export function ModelAvatar({
             sb.rotation.x = sb.userData.rx + breath * 0.6;
           }
 
-          // Rig-less fallback (no bones): lean/bob the whole model about the head,
-          // more when speech is flowing — engaged, even without a moving mouth.
+          // Rig-less fallback (no bones): gentle full-body sway about the center,
+          // a touch more while speech flows — engaged body language.
           if (pivot) {
-            pivot.rotation.y = Math.sin(t * 0.5) * 0.03 + open * Math.sin(t * 3.5) * 0.025;
-            pivot.rotation.x = Math.sin(t * 0.7) * 0.014 + open * 0.012;
+            pivot.rotation.y = Math.sin(t * 0.5) * 0.025 + open * Math.sin(t * 3.5) * 0.02;
+            pivot.rotation.x = Math.sin(t * 0.7) * 0.01 + open * 0.008;
             pivot.position.y = pivotBaseY + Math.sin(t * 0.8) * 0.004;
+          }
+
+          // Procedural mouth (rig-less): drop the lower-front face with speech so
+          // the "jaw" opens as he talks. open=0 → vertices snap back closed.
+          if (jawPos && jawOrig && jawIdx.length) {
+            const drop = open * jawDrop;
+            const arr = jawPos.array;
+            for (let k = 0; k < jawIdx.length; k++) {
+              const i = jawIdx[k];
+              const w = jawW[k];
+              arr[i * 3 + 1] = jawOrig[i * 3 + 1] - drop * w; // down
+              arr[i * 3 + 2] = jawOrig[i * 3 + 2] - drop * w * 0.35; // slightly back
+            }
+            jawPos.needsUpdate = true;
           }
 
           renderer.render(scene, camera);
