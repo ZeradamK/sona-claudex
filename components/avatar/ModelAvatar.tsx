@@ -164,7 +164,8 @@ export function ModelAvatar({
         box.getCenter(center);
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
         const target = new THREE.Vector3();
-        if (headBone) headBone.getWorldPosition(target);
+        const hb = headBone as { getWorldPosition: (v: unknown) => void } | null;
+        if (hb) hb.getWorldPosition(target);
         else target.set(center.x, box.min.y + size.y * 0.86, center.z);
         camera.position.set(target.x, target.y + size.y * 0.01, target.z + maxDim * 0.52);
         camera.lookAt(target);
