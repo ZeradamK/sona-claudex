@@ -27,3 +27,6 @@ prisma/dev.db
 
 # typescript incremental build cache
 tsconfig.tsbuildinfo
+
+# Local game-ripped Alfred model (not republished)
+public/avatar/alfred.glb
