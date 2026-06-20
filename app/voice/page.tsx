@@ -10,6 +10,7 @@
 import { Camera, CameraOff, Mic, Square } from "lucide-react";
 import { useState } from "react";
 
+import { ModelAvatar } from "@/components/avatar/ModelAvatar";
 import { SonaAvatar } from "@/components/avatar/SonaAvatar";
 import { RobotFace } from "@/components/face/RobotFace";
 import { PERSONALITIES, getPersonality } from "@/lib/sona/personalities";
@@ -124,6 +125,16 @@ export default function VoiceTestPage() {
           <RobotFace
             mode={voice.mode}
             audioLevel={voice.audioLevel}
+            className="h-full w-full"
+          />
+        ) : current.customRig ? (
+          <ModelAvatar
+            key={current.avatarUrl}
+            url={current.avatarUrl}
+            active={active}
+            getAudioTap={voice.getAudioTap}
+            hairColor={current.hairColor}
+            onError={() => setAvatarFailed(true)}
             className="h-full w-full"
           />
         ) : (

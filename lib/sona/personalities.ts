@@ -23,6 +23,9 @@ export type Personality = {
   glow: string;
   /** Optional: recolor the avatar's hair after load (e.g. silver, to age it). */
   hairColor?: string;
+  /** True = a non-RPM rigged GLB (no visemes) → render via ModelAvatar with
+   * jaw-bone lip-sync, not TalkingHead. */
+  customRig?: boolean;
   /** The character's identity + manner — becomes the system persona. */
   character: string;
 };
@@ -31,15 +34,12 @@ const SONA_AVATAR =
   process.env.NEXT_PUBLIC_SONA_AVATAR_URL ??
   "https://cdn.jsdelivr.net/gh/met4citizen/HeadAudio@main/avatars/julia.glb";
 
-// A distinguished man in a navy suit, white shirt, tie + glasses (verified male,
-// full ARKit+Oculus visemes, RPM/Wolf3D rig — renders + lip-syncs in TalkingHead
-// with body:"M"). For an exact "older, gray, black-tux" Alfred, export one from
-// Avaturn and set NEXT_PUBLIC_ALFRED_AVATAR_URL. Alt verified male GLBs:
-//   basimakram/talking-ai-avatar avatar9.glb (bearded/mature), avatar6.glb (glasses),
-//   met4citizen/TalkingHead avatars/avatarsdk.glb (young, plain).
+// Alfred uses a custom game-ripped GLB (FBX→glTF, textures repacked, ~5MB) with
+// a real facial skeleton incl. a `head jaw` bone. It has NO morph-target visemes,
+// so it renders via ModelAvatar (jaw-bone lip-sync) instead of TalkingHead. The
+// .glb is a local asset under public/avatar (gitignored — not pushed).
 const ALFRED_AVATAR =
-  process.env.NEXT_PUBLIC_ALFRED_AVATAR_URL ??
-  "https://cdn.jsdelivr.net/gh/khaledalam/avatoon@main/example/public/avatar.glb";
+  process.env.NEXT_PUBLIC_ALFRED_AVATAR_URL ?? "/avatar/alfred.glb";
 
 export const PERSONALITIES: Personality[] = [
   {
@@ -68,7 +68,9 @@ You're genuinely interested in this person and what's going on with them. You're
     avatarUrl: ALFRED_AVATAR,
     accent: "#d4af37",
     glow: "rgba(212,175,55,0.10)",
-    hairColor: "#d8d5cc", // distinguished silver — ages him toward the butler look
+    // No hair recolor: the ripped model already has Alfred's real gray hair +
+    // aged face in its textures — tinting it just blew out the head.
+    customRig: true,
 
     character: `You are Alfred — a distinguished British butler in your sixties, silver-haired and impeccably composed, in a black tuxedo, white shirt and tie. You have served this household with quiet devotion for decades.
 
