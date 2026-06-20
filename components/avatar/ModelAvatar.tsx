@@ -2,12 +2,13 @@
 
 /**
  * ModelAvatar — renders an arbitrary rigged GLB (e.g. a game-ripped character
- * like Alfred) that ISN'T a Ready-Player-Me/TalkingHead avatar, so it has no
- * visemes. It frames the head/upper body, lights it, idles, and drives a
- * jaw-bone "open mouth" from Sona's live audio amplitude — bone-based lip-sync
- * for models without morph-target visemes.
+ * like Alfred) that ISN'T a Ready-Player-Me/TalkingHead avatar. It frames the
+ * head/upper body, lights it, and drives a real facial rig from Sona's live
+ * audio: jaw + lower lips open with speech, plus idle blinking, head-sway and
+ * breathing so it feels alive (Sona-style life) without morph-target visemes.
  *
- * three.js is browser-only, so it's dynamic-imported inside the effect.
+ * Dev pose debug: /voice?pose=open forces the mouth open; ?hideMat=7,9 hides
+ * material indices (used to find removable parts like glasses).
  */
 
 import { useEffect, useRef } from "react";
@@ -18,17 +19,23 @@ type Props = {
   url: string;
   active: boolean;
   getAudioTap: () => AudioTap | null;
-  /** Recolor the hair mesh (e.g. silver). */
-  hairColor?: string;
+  /** Material indices to hide (e.g. glasses). */
+  hideMaterials?: number[];
   className?: string;
   onError?: (msg: string) => void;
+};
+
+type Bone = {
+  name: string;
+  rotation: { x: number; y: number; z: number };
+  userData: Record<string, number>;
 };
 
 export function ModelAvatar({
   url,
   active,
   getAudioTap,
-  hairColor,
+  hideMaterials,
   className,
   onError
 }: Props) {
@@ -55,6 +62,14 @@ export function ModelAvatar({
         );
         if (disposed) return;
 
+        const params = new URLSearchParams(window.location.search);
+        const forceOpen = params.get("pose") === "open";
+        const hideExtra = (params.get("hideMat") || "")
+          .split(",")
+          .map((s) => parseInt(s, 10))
+          .filter((n) => !Number.isNaN(n));
+        const hideSet = new Set([...(hideMaterials ?? []), ...hideExtra]);
+
         const width = mount.clientWidth || 480;
         const height = mount.clientHeight || 560;
 
@@ -69,14 +84,12 @@ export function ModelAvatar({
         mount.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(28, width / height, 0.01, 5000);
-
-        // Studio-ish lighting for a dignified look.
-        scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-        const key = new THREE.DirectionalLight(0xfff4e6, 2.2);
+        const camera = new THREE.PerspectiveCamera(26, width / height, 0.01, 5000);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.15));
+        const key = new THREE.DirectionalLight(0xfff4e6, 2.1);
         key.position.set(1, 2, 2.5);
         scene.add(key);
-        const rim = new THREE.DirectionalLight(0xd4af37, 0.6);
+        const rim = new THREE.DirectionalLight(0xd4af37, 0.55);
         rim.position.set(-2, 1.5, -1.5);
         scene.add(rim);
         const fill = new THREE.DirectionalLight(0xbfd4ff, 0.5);
@@ -91,112 +104,145 @@ export function ModelAvatar({
         const model = gltf.scene;
         scene.add(model);
 
-        // Recolor hair if requested.
-        if (hairColor) {
+        // Hide requested material groups (e.g. glasses) on the fused mesh.
+        if (hideSet.size) {
           model.traverse((o: unknown) => {
-            const m = o as {
-              isMesh?: boolean;
-              name?: string;
-              material?: unknown;
-            };
-            if (m.isMesh && /hair/i.test(m.name ?? "")) {
-              const mats = Array.isArray(m.material) ? m.material : [m.material];
-              for (const mat of mats as Array<{
-                map?: unknown;
-                color?: { set: (h: string) => void };
-                needsUpdate?: boolean;
-              }>) {
-                if (!mat) continue;
-                mat.map = null;
-                mat.color?.set(hairColor);
-                mat.needsUpdate = true;
-              }
+            const mesh = o as { isMesh?: boolean; material?: unknown };
+            if (mesh.isMesh && Array.isArray(mesh.material)) {
+              mesh.material.forEach((m, i) => {
+                if (hideSet.has(i)) {
+                  const mat = m as {
+                    transparent?: boolean;
+                    opacity?: number;
+                    depthWrite?: boolean;
+                    colorWrite?: boolean;
+                    visible?: boolean;
+                  };
+                  mat.transparent = true;
+                  mat.opacity = 0;
+                  mat.depthWrite = false;
+                  mat.colorWrite = false;
+                  mat.visible = false;
+                }
+              });
             }
           });
         }
 
-        // Find the jaw bone (for lip-sync) and a head bone (for framing).
-        let jaw: { rotation: { x: number }; userData: Record<string, number> } | null =
-          null;
-        let headBone: { getWorldPosition: (v: unknown) => unknown } | null = null;
+        // Collect facial + body bones to animate.
+        const lowerLips: Bone[] = [];
+        const upperEyelids: Bone[] = [];
+        let jaw: Bone | null = null;
+        let neck: Bone | null = null;
+        let spine: Bone | null = null;
+        let headBone: { getWorldPosition: (v: unknown) => void } | null = null;
         model.traverse((o: unknown) => {
-          const n = o as {
+          const n = o as Bone & {
             isBone?: boolean;
-            name?: string;
-            rotation?: { x: number };
-            userData?: Record<string, number>;
-            getWorldPosition?: (v: unknown) => unknown;
+            getWorldPosition?: (v: unknown) => void;
           };
-          const name = (n.name ?? "").toLowerCase();
-          if (n.isBone) {
-            if (!jaw && /jaw/.test(name)) {
-              n.userData = n.userData || {};
-              n.userData.restX = n.rotation?.x ?? 0;
-              jaw = n as never;
-            }
-            if (/head\s*neck\s*upper|^head$|head_upper/.test(name)) {
-              headBone = n as never;
-            }
-          }
+          if (!n.isBone) return;
+          const name = (n.name || "").toLowerCase();
+          n.userData = n.userData || {};
+          n.userData.rx = n.rotation.x;
+          n.userData.ry = n.rotation.y;
+          n.userData.rz = n.rotation.z;
+          if (/jaw/.test(name) && !jaw) jaw = n;
+          else if (/lip lower/.test(name)) lowerLips.push(n);
+          else if (/eyelid.*upper/.test(name)) upperEyelids.push(n);
+          else if (/neck upper/.test(name) && !neck) neck = n;
+          else if (/spine upper/.test(name) && !spine) spine = n;
+          if (/neck upper|^head$/.test(name))
+            headBone = n as unknown as { getWorldPosition: (v: unknown) => void };
         });
 
-        // Frame the upper body (head + shoulders) using the bounding box.
+        // Frame the head + shoulders.
         const box = new THREE.Box3().setFromObject(model);
         const size = new THREE.Vector3();
         const center = new THREE.Vector3();
         box.getSize(size);
         box.getCenter(center);
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
-
-        // Target the head region: top of the bbox, slightly down.
         const target = new THREE.Vector3();
-        if (headBone) {
-          (headBone as { getWorldPosition: (v: unknown) => void }).getWorldPosition(
-            target
-          );
-        } else {
-          target.set(center.x, box.min.y + size.y * 0.86, center.z);
-        }
-        // Distance to frame ~head+shoulders.
-        const dist = maxDim * 0.55;
-        camera.position.set(target.x, target.y + size.y * 0.02, target.z + dist);
+        if (headBone) headBone.getWorldPosition(target);
+        else target.set(center.x, box.min.y + size.y * 0.86, center.z);
+        camera.position.set(target.x, target.y + size.y * 0.01, target.z + maxDim * 0.52);
         camera.lookAt(target);
 
-        // Audio analyser on the live speech tap (for jaw movement).
+        // Audio analyser on the speech tap.
         let analyser: AnalyserNode | null = null;
-        let buf: Float32Array<ArrayBuffer> | null = null;
+        let abuf: Float32Array<ArrayBuffer> | null = null;
         function ensureAnalyser() {
           if (analyser) return;
           const tap = getTapRef.current();
           if (!tap) return;
           analyser = tap.ctx.createAnalyser();
           analyser.fftSize = 512;
-          buf = new Float32Array(analyser.fftSize);
+          abuf = new Float32Array(analyser.fftSize);
           tap.node.connect(analyser);
         }
 
         const t0 = performance.now();
-        let jawCur = 0;
-        function tick() {
-          const t = (performance.now() - t0) / 1000;
+        let mouth = 0;
+        let nextBlink = 1500;
+        let blink = 0;
+        let blinking = false;
+        let blinkT = 0;
+        function tick(now: number) {
+          const t = (now - t0) / 1000;
+          const ms = now - t0;
+
+          // Mouth from audio (smoothed + gated → no jitter / glitch).
           ensureAnalyser();
-          // Speaking amplitude → jaw open.
           let amp = 0;
-          if (analyser && buf) {
-            analyser.getFloatTimeDomainData(buf);
+          if (analyser && abuf) {
+            analyser.getFloatTimeDomainData(abuf);
             let sum = 0;
-            for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-            amp = Math.min(1, Math.sqrt(sum / buf.length) * 6);
+            for (let i = 0; i < abuf.length; i++) sum += abuf[i] * abuf[i];
+            amp = Math.sqrt(sum / abuf.length) * 7;
           }
-          const targetJaw = activeRef.current ? amp : 0;
-          jawCur += (targetJaw - jawCur) * 0.4; // smooth
+          if (amp < 0.06) amp = 0; // silence gate
+          let targetMouth = activeRef.current ? Math.min(1, amp) : 0;
+          if (forceOpen) targetMouth = 1;
+          // Slower attack/faster release reads as natural speech.
+          mouth += (targetMouth - mouth) * (targetMouth > mouth ? 0.35 : 0.22);
+
           if (jaw) {
-            const j = jaw as { rotation: { x: number }; userData: { restX: number } };
-            j.rotation.x = j.userData.restX + jawCur * 0.32;
+            const j = jaw as Bone;
+            j.rotation.x = j.userData.rx - mouth * 0.3; // open
           }
-          // Subtle idle sway.
-          model.rotation.y = Math.sin(t * 0.5) * 0.05;
-          model.position.y = Math.sin(t * 0.9) * 0.004 * maxDim;
+          for (const lp of lowerLips) {
+            lp.rotation.x = lp.userData.rx - mouth * 0.12;
+          }
+
+          // Idle blink.
+          if (!blinking && ms > nextBlink) {
+            blinking = true;
+            blinkT = 0;
+          }
+          if (blinking) {
+            blinkT += 0.13;
+            blink = blinkT < 1 ? blinkT : 2 - blinkT;
+            if (blinkT >= 2) {
+              blinking = false;
+              blink = 0;
+              nextBlink = ms + 2200 + Math.random() * 3500;
+            }
+          }
+          for (const el of upperEyelids) {
+            el.rotation.x = el.userData.rx + blink * 0.5;
+          }
+
+          // Gentle head-sway + breathing (Sona-style life), no whole-model jerk.
+          if (neck) {
+            const nb = neck as Bone;
+            nb.rotation.y = nb.userData.ry + Math.sin(t * 0.45) * 0.04;
+            nb.rotation.x = nb.userData.rx + Math.sin(t * 0.62) * 0.02;
+          }
+          if (spine) {
+            const sb = spine as Bone;
+            sb.rotation.x = sb.userData.rx + Math.sin(t * 0.8) * 0.008;
+          }
 
           renderer.render(scene, camera);
           raf = requestAnimationFrame(tick);
@@ -241,7 +287,7 @@ export function ModelAvatar({
       if (raf) cancelAnimationFrame(raf);
       cleanup();
     };
-  }, [url, hairColor]);
+  }, [url, hideMaterials]);
 
   return <div ref={mountRef} className={className} />;
 }
