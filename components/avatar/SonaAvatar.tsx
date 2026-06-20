@@ -29,6 +29,7 @@ type TalkingHeadInstance = {
   showAvatar: (opts: Record<string, unknown>) => Promise<void>;
   stop?: () => void;
   mtAvatar?: Record<string, MorphTarget | undefined>;
+  armature?: { traverse: (cb: (o: unknown) => void) => void };
   opt: { update: ((dt: number) => void) | null };
   lookAtCamera?: (ms?: number) => void;
   speakWithHands?: (delay?: number, prob?: number) => void;
@@ -49,6 +50,8 @@ type Props = {
   active: boolean;
   /** Body type for TalkingHead posing/animation — "M" male, "F" female. */
   body?: "M" | "F";
+  /** Optional: recolor the hair (e.g. silver to age a character) after load. */
+  hairColor?: string;
   getAudioTap: () => AudioTap | null;
   /** Register imperative controls so model tool calls can drive the avatar. */
   registerControls?: (controls: AvatarControls | null) => void;
@@ -61,6 +64,7 @@ export function SonaAvatar({
   url,
   active,
   body = "F",
+  hairColor,
   getAudioTap,
   registerControls,
   className,
@@ -80,6 +84,8 @@ export function SonaAvatar({
   const registerControlsRef = useRef(registerControls);
   const bodyRef = useRef(body);
   bodyRef.current = body;
+  const hairColorRef = useRef(hairColor);
+  hairColorRef.current = hairColor;
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   getTapRef.current = getAudioTap;
@@ -120,6 +126,45 @@ export function SonaAvatar({
           head.stop?.();
           return;
         }
+
+        // Per-character appearance: recolor the hair (e.g. silver, to age a
+        // distinguished butler) by tinting the hair mesh's material. We drop its
+        // base texture so the tint reads as a solid color rather than darkening.
+        if (hairColorRef.current) {
+          try {
+            const hex = hairColorRef.current;
+            head.armature?.traverse((o) => {
+              const mesh = o as {
+                isMesh?: boolean;
+                name?: string;
+                material?: unknown;
+              };
+              if (mesh.isMesh && /hair/i.test(mesh.name ?? "")) {
+                const mats = Array.isArray(mesh.material)
+                  ? mesh.material
+                  : [mesh.material];
+                for (const m of mats) {
+                  const mat = m as {
+                    map?: unknown;
+                    color?: { set: (h: string) => void };
+                    roughness?: number;
+                    metalness?: number;
+                    needsUpdate?: boolean;
+                  };
+                  if (!mat) continue;
+                  mat.map = null;
+                  mat.color?.set(hex);
+                  if (typeof mat.roughness === "number") mat.roughness = 0.85;
+                  if (typeof mat.metalness === "number") mat.metalness = 0;
+                  mat.needsUpdate = true;
+                }
+              }
+            });
+          } catch {
+            // non-fatal — avatar still renders with its original hair
+          }
+        }
+
         // Expose mood/gesture controls so the model's tool calls can drive the
         // face and body. TalkingHead playGesture(name, dur, mirror): mirror=true
         // is the right hand — the natural side for a wave.
