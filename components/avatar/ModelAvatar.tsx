@@ -118,12 +118,23 @@ export function ModelAvatar({
           });
         }
 
-        // Collect facial + body bones to animate.
+        // Collect the full facial + body rig (this game model has 110 joints:
+        // jaw, every lip, mouth corners, cheeks, eyelids, 6 eyebrows, eyeballs,
+        // neck upper/lower, spine) so the avatar can move like Sona's RPM build —
+        // speaking mouth, eye saccades, brow emphasis, blink, head-sway, breathing.
         const lowerLips: Bone[] = [];
+        const upperLips: Bone[] = [];
+        const mouthCorners: Bone[] = [];
+        const cheeks: Bone[] = [];
         const upperEyelids: Bone[] = [];
+        const lowerEyelids: Bone[] = [];
+        const eyebrows: Bone[] = [];
+        const eyeballs: Bone[] = [];
         let jaw: Bone | null = null;
-        let neck: Bone | null = null;
-        let spine: Bone | null = null;
+        let neckUpper: Bone | null = null;
+        let neckLower: Bone | null = null;
+        let spineUpper: Bone | null = null;
+        let spineMiddle: Bone | null = null;
         let headBone: { getWorldPosition: (v: unknown) => void } | null = null;
         model.traverse((o: unknown) => {
           const n = o as Bone & {
@@ -132,15 +143,24 @@ export function ModelAvatar({
           };
           if (!n.isBone) return;
           const name = (n.name || "").toLowerCase();
+          if (name.includes("unused")) return;
           n.userData = n.userData || {};
           n.userData.rx = n.rotation.x;
           n.userData.ry = n.rotation.y;
           n.userData.rz = n.rotation.z;
-          if (/jaw/.test(name) && !jaw) jaw = n;
+          if (/jaw/.test(name)) jaw = jaw ?? n;
           else if (/lip lower/.test(name)) lowerLips.push(n);
+          else if (/lip upper/.test(name)) upperLips.push(n);
+          else if (/mouth corner/.test(name)) mouthCorners.push(n);
+          else if (/cheek.*upper/.test(name)) cheeks.push(n);
           else if (/eyelid.*upper/.test(name)) upperEyelids.push(n);
-          else if (/neck upper/.test(name) && !neck) neck = n;
-          else if (/spine upper/.test(name) && !spine) spine = n;
+          else if (/eyelid.*lower/.test(name)) lowerEyelids.push(n);
+          else if (/eyebrow/.test(name)) eyebrows.push(n);
+          else if (/eyeball/.test(name)) eyeballs.push(n);
+          else if (/neck upper/.test(name)) neckUpper = neckUpper ?? n;
+          else if (/neck lower/.test(name)) neckLower = neckLower ?? n;
+          else if (/spine upper/.test(name)) spineUpper = spineUpper ?? n;
+          else if (/spine middle/.test(name)) spineMiddle = spineMiddle ?? n;
           if (/neck upper|^head$/.test(name))
             headBone = n as unknown as { getWorldPosition: (v: unknown) => void };
         });
@@ -172,17 +192,29 @@ export function ModelAvatar({
           tap.node.connect(analyser);
         }
 
+        // ── Animation state ──────────────────────────────────────────────
         const t0 = performance.now();
-        let mouth = 0;
+        let mouth = 0; // 0..1 speech openness (smoothed)
+        let brow = 0; // 0..1 brow emphasis, follows speech peaks
+        let peak = 0; // decaying envelope of recent speech peaks
+        // Gaze: small saccades biased toward the camera so the eyes feel alive.
+        let gazeX = 0;
+        let gazeY = 0;
+        let gazeTX = 0;
+        let gazeTY = 0;
+        let nextSaccade = 600;
+        // Blink.
         let nextBlink = 1500;
         let blink = 0;
         let blinking = false;
         let blinkT = 0;
+        const rand = () => Math.random();
+
         function tick(now: number) {
           const t = (now - t0) / 1000;
           const ms = now - t0;
 
-          // Mouth from audio (smoothed + gated → no jitter / glitch).
+          // ── Mouth from audio (smoothed + gated → no jitter / glitch) ──
           ensureAnalyser();
           let amp = 0;
           if (analyser && abuf) {
@@ -194,18 +226,45 @@ export function ModelAvatar({
           if (amp < 0.06) amp = 0; // silence gate
           let targetMouth = activeRef.current ? Math.min(1, amp) : 0;
           if (forceOpen) targetMouth = 1;
-          // Slower attack/faster release reads as natural speech.
+          // Slower attack / faster release reads as natural speech.
           mouth += (targetMouth - mouth) * (targetMouth > mouth ? 0.35 : 0.22);
+          // Brow emphasis rises on speech peaks, eases back down.
+          peak = Math.max(peak * 0.94, targetMouth);
+          brow += (peak - brow) * 0.08;
 
+          // Viseme variety so the mouth isn't a metronome hinge: blend an open
+          // component (jaw) with a wide/round component (corners) during speech.
+          const open = mouth;
+          const wide = 0.5 + 0.5 * Math.sin(t * 6.3);
           if (jaw) {
             const j = jaw as Bone;
-            j.rotation.x = j.userData.rx - mouth * 0.3; // open
+            j.rotation.x = j.userData.rx - open * 0.3; // drop the jaw
           }
-          for (const lp of lowerLips) {
-            lp.rotation.x = lp.userData.rx - mouth * 0.12;
+          for (const lp of lowerLips)
+            lp.rotation.x = lp.userData.rx - open * 0.1;
+          for (const lp of upperLips)
+            lp.rotation.x = lp.userData.rx + open * 0.04;
+          for (const mc of mouthCorners) {
+            mc.rotation.z = mc.userData.rz + open * wide * 0.06;
+            mc.rotation.x = mc.userData.rx - open * 0.03;
+          }
+          for (const ch of cheeks)
+            ch.rotation.x = ch.userData.rx - open * 0.02;
+
+          // ── Eyes: micro-saccades, biased toward the camera (looks at you) ──
+          if (ms > nextSaccade) {
+            gazeTX = (rand() - 0.5) * 0.18; // horizontal
+            gazeTY = (rand() - 0.5) * 0.1; // vertical
+            nextSaccade = ms + 700 + rand() * 2200;
+          }
+          gazeX += (gazeTX - gazeX) * 0.25; // snap fast, then hold
+          gazeY += (gazeTY - gazeY) * 0.25;
+          for (const eb of eyeballs) {
+            eb.rotation.y = eb.userData.ry + gazeX;
+            eb.rotation.x = eb.userData.rx + gazeY;
           }
 
-          // Idle blink.
+          // ── Blink (upper + lower lids) ──
           if (!blinking && ms > nextBlink) {
             blinking = true;
             blinkT = 0;
@@ -216,22 +275,38 @@ export function ModelAvatar({
             if (blinkT >= 2) {
               blinking = false;
               blink = 0;
-              nextBlink = ms + 2200 + Math.random() * 3500;
+              nextBlink = ms + 2200 + rand() * 3500;
             }
           }
-          for (const el of upperEyelids) {
+          for (const el of upperEyelids)
             el.rotation.x = el.userData.rx + blink * 0.5;
-          }
+          for (const el of lowerEyelids)
+            el.rotation.x = el.userData.rx - blink * 0.2;
 
-          // Gentle head-sway + breathing (Sona-style life), no whole-model jerk.
-          if (neck) {
-            const nb = neck as Bone;
-            nb.rotation.y = nb.userData.ry + Math.sin(t * 0.45) * 0.04;
-            nb.rotation.x = nb.userData.rx + Math.sin(t * 0.62) * 0.02;
+          // ── Eyebrows: idle micro-raise + speech emphasis ──
+          const browLift = brow * 0.05 + Math.sin(t * 0.5) * 0.012;
+          for (const eb of eyebrows) eb.rotation.x = eb.userData.rx - browLift;
+
+          // ── Head-sway + breathing (layered, Sona-style life) ──
+          const speakNod = open * Math.sin(t * 4.2) * 0.012;
+          if (neckUpper) {
+            const nb = neckUpper as Bone;
+            nb.rotation.y = nb.userData.ry + Math.sin(t * 0.45) * 0.045 + gazeX * 0.25;
+            nb.rotation.x = nb.userData.rx + Math.sin(t * 0.62) * 0.02 + speakNod;
+            nb.rotation.z = nb.userData.rz + Math.sin(t * 0.33) * 0.015;
           }
-          if (spine) {
-            const sb = spine as Bone;
-            sb.rotation.x = sb.userData.rx + Math.sin(t * 0.8) * 0.008;
+          if (neckLower) {
+            const nb = neckLower as Bone;
+            nb.rotation.y = nb.userData.ry + Math.sin(t * 0.31) * 0.02;
+          }
+          const breath = Math.sin(t * 0.8) * 0.008;
+          if (spineUpper) {
+            const sb = spineUpper as Bone;
+            sb.rotation.x = sb.userData.rx + breath;
+          }
+          if (spineMiddle) {
+            const sb = spineMiddle as Bone;
+            sb.rotation.x = sb.userData.rx + breath * 0.6;
           }
 
           renderer.render(scene, camera);
