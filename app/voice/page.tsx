@@ -133,7 +133,6 @@ export default function VoiceTestPage() {
             url={current.avatarUrl}
             active={active}
             getAudioTap={voice.getAudioTap}
-            hairColor={current.hairColor}
             onError={() => setAvatarFailed(true)}
             className="h-full w-full"
           />
