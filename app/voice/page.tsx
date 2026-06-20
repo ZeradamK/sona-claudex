@@ -133,6 +133,7 @@ export default function VoiceTestPage() {
             url={current.avatarUrl}
             active={active}
             getAudioTap={voice.getAudioTap}
+            hidePrimitives={current.hidePrimitives}
             onError={() => setAvatarFailed(true)}
             className="h-full w-full"
           />

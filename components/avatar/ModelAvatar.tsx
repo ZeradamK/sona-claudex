@@ -7,8 +7,8 @@
  * audio: jaw + lower lips open with speech, plus idle blinking, head-sway and
  * breathing so it feels alive (Sona-style life) without morph-target visemes.
  *
- * Dev pose debug: /voice?pose=open forces the mouth open; ?hideMat=7,9 hides
- * material indices (used to find removable parts like glasses).
+ * Dev pose debug: /voice?pose=open forces the mouth open; ?hidePrim=8 hides
+ * glTF primitives by index (that's how the glasses are removed — prim 8).
  */
 
 import { useEffect, useRef } from "react";
@@ -19,8 +19,8 @@ type Props = {
   url: string;
   active: boolean;
   getAudioTap: () => AudioTap | null;
-  /** Material indices to hide (e.g. glasses). */
-  hideMaterials?: number[];
+  /** Primitive indices (glTF primitive order) to hide — e.g. the glasses. */
+  hidePrimitives?: number[];
   className?: string;
   onError?: (msg: string) => void;
 };
@@ -35,7 +35,7 @@ export function ModelAvatar({
   url,
   active,
   getAudioTap,
-  hideMaterials,
+  hidePrimitives,
   className,
   onError
 }: Props) {
@@ -64,11 +64,11 @@ export function ModelAvatar({
 
         const params = new URLSearchParams(window.location.search);
         const forceOpen = params.get("pose") === "open";
-        const hideExtra = (params.get("hideMat") || "")
+        const hideExtra = (params.get("hidePrim") || "")
           .split(",")
           .map((s) => parseInt(s, 10))
           .filter((n) => !Number.isNaN(n));
-        const hideSet = new Set([...(hideMaterials ?? []), ...hideExtra]);
+        const hideSet = new Set([...(hidePrimitives ?? []), ...hideExtra]);
 
         const width = mount.clientWidth || 480;
         const height = mount.clientHeight || 560;
@@ -104,28 +104,17 @@ export function ModelAvatar({
         const model = gltf.scene;
         scene.add(model);
 
-        // Hide requested material groups (e.g. glasses) on the fused mesh.
+        // Hide requested primitives (e.g. the glasses). A multi-primitive glTF
+        // mesh is split by GLTFLoader into one single-material child mesh per
+        // primitive, in primitive order — so we index by encounter order and
+        // hide the whole child. (The old array-material path never fired here.)
         if (hideSet.size) {
+          let pi = 0;
           model.traverse((o: unknown) => {
-            const mesh = o as { isMesh?: boolean; material?: unknown };
-            if (mesh.isMesh && Array.isArray(mesh.material)) {
-              mesh.material.forEach((m, i) => {
-                if (hideSet.has(i)) {
-                  const mat = m as {
-                    transparent?: boolean;
-                    opacity?: number;
-                    depthWrite?: boolean;
-                    colorWrite?: boolean;
-                    visible?: boolean;
-                  };
-                  mat.transparent = true;
-                  mat.opacity = 0;
-                  mat.depthWrite = false;
-                  mat.colorWrite = false;
-                  mat.visible = false;
-                }
-              });
-            }
+            const mesh = o as { isMesh?: boolean; visible?: boolean };
+            if (!mesh.isMesh) return;
+            if (hideSet.has(pi)) mesh.visible = false;
+            pi++;
           });
         }
 
@@ -288,7 +277,7 @@ export function ModelAvatar({
       if (raf) cancelAnimationFrame(raf);
       cleanup();
     };
-  }, [url, hideMaterials]);
+  }, [url, hidePrimitives]);
 
   return <div ref={mountRef} className={className} />;
 }

@@ -26,6 +26,9 @@ export type Personality = {
   /** True = a non-RPM rigged GLB (no visemes) → render via ModelAvatar with
    * jaw-bone lip-sync, not TalkingHead. */
   customRig?: boolean;
+  /** For customRig avatars: glTF primitive indices to hide (e.g. the glasses
+   * are a single fused primitive on the ripped model). */
+  hidePrimitives?: number[];
   /** The character's identity + manner — becomes the system persona. */
   character: string;
 };
@@ -71,6 +74,9 @@ You're genuinely interested in this person and what's going on with them. You're
     // No hair recolor: the ripped model already has Alfred's real gray hair +
     // aged face in its textures — tinting it just blew out the head.
     customRig: true,
+    // The glasses are primitive #8 (a separate skin-textured mesh fused into
+    // the model) — hide it so we keep only the face, per the desired look.
+    hidePrimitives: [8],
 
     character: `You are Alfred — a distinguished British butler in your sixties, silver-haired and impeccably composed, in a black tuxedo, white shirt and tie. You have served this household with quiet devotion for decades.
 
