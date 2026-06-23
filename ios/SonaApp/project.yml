@@ -17,3 +17,22 @@ settings:
     CODE_SIGNING_REQUIRED: "NO"
     CODE_SIGNING_ALLOWED: "NO"
 targets:
+  SonaApp:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    dependencies:
+      - package: GLTFKit2
+        product: GLTFKit2
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.sona.app
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Sona listens when you speak to her."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Sona can see what you show her."
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDefault
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
