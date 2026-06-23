@@ -34,3 +34,15 @@ struct SonaModelView: UIViewRepresentable {
                 view.scene = modelScene
                 let modelNodes = modelScene.rootNode.childNodes
                 addLighting(to: modelScene)
+                frameCamera(on: modelScene, view: view)
+                for node in modelNodes { idleSway(node) }
+            }
+        }
+    }
+
+    // MARK: Lighting
+
+    private func addLighting(to scene: SCNScene) {
+        scene.lightingEnvironment.contents = UIColor(white: 0.95, alpha: 1)
+        scene.lightingEnvironment.intensity = 1.6
+
