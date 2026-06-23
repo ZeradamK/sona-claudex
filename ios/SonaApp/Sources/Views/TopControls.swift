@@ -22,3 +22,14 @@ struct TopControls: View {
         .padding(.horizontal, 16)
     }
 
+    private func circleButton(_ icon: String, action: @escaping () -> Void = {}) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(.black.opacity(0.28), in: Circle())
+                .overlay(Circle().stroke(.white.opacity(0.12), lineWidth: 1))
+        }
+    }
+}
