@@ -28,3 +28,18 @@ struct ChatSheet: View {
                             withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                         }
                     }
+                }
+                inputBar
+            }
+            .navigationTitle("Sona")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Clear") { store.clear() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
