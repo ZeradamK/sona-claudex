@@ -73,3 +73,18 @@ struct ChatSheet: View {
 
             Button(action: send) {
                 Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundStyle(.tint)
+            }
+            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func send() {
+        let text = draft
+        draft = ""
+        store.send(text)
+    }
+}
