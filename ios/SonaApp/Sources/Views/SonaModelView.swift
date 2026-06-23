@@ -82,3 +82,15 @@ struct SonaModelView: UIViewRepresentable {
         let distance = (height * 0.62) / tan(fovRad / 2)
         camNode.position = SCNVector3(center.x, center.y, center.z + distance)
         camNode.look(at: center)
+        scene.rootNode.addChildNode(camNode)
+        view.pointOfView = camNode
+        NSLog("SONA framed h=%.2f cam=(%.2f,%.2f,%.2f)", height, camNode.position.x, camNode.position.y, camNode.position.z)
+    }
+
+    private func combinedBounds(_ root: SCNNode) -> (SCNVector3, SCNVector3) {
+        var minV = SCNVector3(Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude)
+        var maxV = SCNVector3(-Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude)
+        root.enumerateHierarchy { node, _ in
+            guard node.geometry != nil else { return }
+            let (lo, hi) = node.boundingBox
+            let corners = [
