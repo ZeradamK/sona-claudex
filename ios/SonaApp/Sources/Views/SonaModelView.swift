@@ -58,3 +58,15 @@ struct SonaModelView: UIViewRepresentable {
         ambient.light?.type = .ambient
         ambient.light?.intensity = 350
         scene.rootNode.addChildNode(ambient)
+    }
+
+    // MARK: Framing
+
+    private func frameCamera(on scene: SCNScene, view: SCNView) {
+        let (minV, maxV) = combinedBounds(scene.rootNode)
+        let valid = maxV.y > minV.y && maxV.y < 1e8
+        let center = valid
+            ? SCNVector3((minV.x + maxV.x) / 2, (minV.y + maxV.y) / 2, (minV.z + maxV.z) / 2)
+            : SCNVector3(0, 0.9, 0)
+        let height = valid ? max(maxV.y - minV.y, 0.1) : 1.7
+
