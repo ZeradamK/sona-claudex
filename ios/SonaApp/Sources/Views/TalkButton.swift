@@ -1,29 +1,30 @@
 import SwiftUI
 
-/// The amber "Start talking" pill above the input bar.
+/// The "Start talking" pill — drives the live voice session.
 struct TalkButton: View {
+    var title: String = "Start talking"
+    var active: Bool = false
     var action: () -> Void = {}
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: "waveform")
+                Image(systemName: active ? "stop.fill" : "waveform")
                     .font(.system(size: 15, weight: .bold))
-                Text("Start talking")
+                Text(title)
                     .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.black)
             .padding(.horizontal, 22)
             .padding(.vertical, 14)
-            .background(
-                LinearGradient(
-                    colors: [Color(red: 1, green: 0.66, blue: 0.26),
-                             Color(red: 0.97, green: 0.51, blue: 0.17)],
-                    startPoint: .top, endPoint: .bottom
-                ),
-                in: Capsule()
+            .background(.white, in: Capsule())
+            .overlay(
+                Capsule().stroke(
+                    active ? Color.red.opacity(0.6) : Color.black.opacity(0.08),
+                    lineWidth: active ? 2 : 1
+                )
             )
-            .shadow(color: .orange.opacity(0.45), radius: 14, y: 5)
+            .shadow(color: .black.opacity(0.16), radius: 12, y: 4)
         }
     }
 }
