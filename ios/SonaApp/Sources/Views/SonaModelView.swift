@@ -70,3 +70,15 @@ struct SonaModelView: UIViewRepresentable {
             : SCNVector3(0, 0.9, 0)
         let height = valid ? max(maxV.y - minV.y, 0.1) : 1.7
 
+        let camera = SCNCamera()
+        camera.fieldOfView = 32
+        camera.zNear = 0.01
+        camera.zFar = 1000
+        camera.wantsHDR = true
+
+        let camNode = SCNNode()
+        camNode.camera = camera
+        let fovRad = Float(camera.fieldOfView) * .pi / 180
+        let distance = (height * 0.62) / tan(fovRad / 2)
+        camNode.position = SCNVector3(center.x, center.y, center.z + distance)
+        camNode.look(at: center)
