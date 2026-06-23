@@ -94,3 +94,15 @@ struct SonaModelView: UIViewRepresentable {
             guard node.geometry != nil else { return }
             let (lo, hi) = node.boundingBox
             let corners = [
+                SCNVector3(lo.x, lo.y, lo.z), SCNVector3(hi.x, lo.y, lo.z),
+                SCNVector3(lo.x, hi.y, lo.z), SCNVector3(hi.x, hi.y, lo.z),
+                SCNVector3(lo.x, lo.y, hi.z), SCNVector3(hi.x, lo.y, hi.z),
+                SCNVector3(lo.x, hi.y, hi.z), SCNVector3(hi.x, hi.y, hi.z)
+            ]
+            for corner in corners {
+                let w = root.convertPosition(corner, from: node)
+                minV.x = min(minV.x, w.x); maxV.x = max(maxV.x, w.x)
+                minV.y = min(minV.y, w.y); maxV.y = max(maxV.y, w.y)
+                minV.z = min(minV.z, w.z); maxV.z = max(maxV.z, w.z)
+            }
+        }
