@@ -26,3 +26,16 @@ struct ContentView: View {
 
                 BottomBar(text: $draft, onSend: send, onText: { showChat = true })
                     .padding(.bottom, 4)
+            }
+        }
+        .sheet(isPresented: $showChat) {
+            ChatSheet(store: store)
+        }
+    }
+
+    private func send() {
+        store.send(draft)
+        draft = ""
+        showChat = true
+    }
+}
