@@ -12,3 +12,17 @@ struct ContentView: View {
         ZStack {
             BackgroundScene()
 
+            SonaModelView()
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                TopControls(onClose: {})
+                    .padding(.top, 4)
+
+                Spacer()
+
+                TalkButton(action: { showChat = true })
+                    .padding(.bottom, 12)
+
+                BottomBar(text: $draft, onSend: send, onText: { showChat = true })
+                    .padding(.bottom, 4)
