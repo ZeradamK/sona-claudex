@@ -32,3 +32,20 @@ struct BottomBar: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.white, in: Capsule())
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color(red: 0.20, green: 0.45, blue: 0.28).opacity(0.5), in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.14), lineWidth: 1))
+        .padding(.horizontal, 12)
+    }
+
+    private func iconCircle(_ icon: String) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 38, height: 38)
+            .background(.white.opacity(0.16), in: Circle())
+    }
+}
