@@ -17,3 +17,22 @@ final class ConversationStore: ObservableObject {
     }
 
     func load() {
+        guard
+            let data = try? Data(contentsOf: fileURL),
+            let decoded = try? JSONDecoder().decode([Message].self, from: data)
+        else { return }
+        messages = decoded
+    }
+
+    private func persist() {
+        guard let data = try? JSONEncoder().encode(messages) else { return }
+        try? data.write(to: fileURL, options: .atomic)
+    }
+
+    func append(_ message: Message) {
+        messages.append(message)
+        persist()
+    }
+
+    func clear() {
+        messages.removeAll()
