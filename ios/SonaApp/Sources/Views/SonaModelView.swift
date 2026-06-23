@@ -22,3 +22,15 @@ struct SonaModelView: UIViewRepresentable {
     private func load(into view: SCNView) {
         guard let url = Bundle.main.url(forResource: "sona", withExtension: "glb") else {
             NSLog("SONA: sona.glb not in bundle"); return
+        }
+        GLTFAsset.load(with: url, options: [:]) { _, status, maybeAsset, error, _ in
+            if let error = error { NSLog("SONA load error: %@", String(describing: error)) }
+            guard status == .complete, let asset = maybeAsset else { return }
+            let source = GLTFSCNSceneSource(asset: asset)
+            guard let modelScene = source.defaultScene ?? source.scenes.first else {
+                NSLog("SONA: no scene"); return
+            }
+            DispatchQueue.main.async {
+                view.scene = modelScene
+                let modelNodes = modelScene.rootNode.childNodes
+                addLighting(to: modelScene)
