@@ -58,3 +58,18 @@ struct ChatSheet: View {
                 )
                 .foregroundStyle(message.role == .user ? .white : .primary)
             if message.role == .sona { Spacer(minLength: 40) }
+        }
+    }
+
+    private var inputBar: some View {
+        HStack(spacing: 10) {
+            TextField("Message", text: $draft, axis: .vertical)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(Color(.secondarySystemBackground), in: Capsule())
+                .submitLabel(.send)
+                .onSubmit(send)
+
+            Button(action: send) {
+                Image(systemName: "arrow.up.circle.fill")
