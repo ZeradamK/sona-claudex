@@ -36,3 +36,22 @@ final class ConversationStore: ObservableObject {
 
     func clear() {
         messages.removeAll()
+        persist()
+    }
+
+    /// Records the user's line and produces a Sona reply (local placeholder).
+    func send(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        append(Message(role: .user, text: trimmed))
+
+        let reply = Self.placeholderReply(to: trimmed)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            self?.append(Message(role: .sona, text: reply))
+        }
+    }
+
+    private static func placeholderReply(to text: String) -> String {
+        "I hear you — “\(text)”. I'm Sona. I'm still getting my voice connected, but I'm here."
+    }
+}
