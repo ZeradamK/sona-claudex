@@ -106,3 +106,15 @@ struct SonaModelView: UIViewRepresentable {
                 minV.z = min(minV.z, w.z); maxV.z = max(maxV.z, w.z)
             }
         }
+        return (minV, maxV)
+    }
+
+    private func idleSway(_ node: SCNNode) {
+        let sway = SCNAction.sequence([
+            SCNAction.rotateBy(x: 0, y: 0.05, z: 0, duration: 2.4),
+            SCNAction.rotateBy(x: 0, y: -0.05, z: 0, duration: 2.4)
+        ])
+        sway.timingMode = .easeInEaseOut
+        node.runAction(.repeatForever(sway))
+    }
+}
