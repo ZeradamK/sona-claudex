@@ -13,3 +13,17 @@ struct TalkButton: View {
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundStyle(.white)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 14)
+            .background(
+                LinearGradient(
+                    colors: [Color(red: 1, green: 0.66, blue: 0.26),
+                             Color(red: 0.97, green: 0.51, blue: 0.17)],
+                    startPoint: .top, endPoint: .bottom
+                ),
+                in: Capsule()
+            )
+            .shadow(color: .orange.opacity(0.45), radius: 14, y: 5)
+        }
+    }
+}
