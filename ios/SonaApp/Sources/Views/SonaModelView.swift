@@ -46,3 +46,15 @@ struct SonaModelView: UIViewRepresentable {
         scene.lightingEnvironment.contents = UIColor(white: 0.95, alpha: 1)
         scene.lightingEnvironment.intensity = 1.6
 
+        let key = SCNNode()
+        key.light = SCNLight()
+        key.light?.type = .directional
+        key.light?.intensity = 800
+        key.eulerAngles = SCNVector3(-0.5, 0.5, 0)
+        scene.rootNode.addChildNode(key)
+
+        let ambient = SCNNode()
+        ambient.light = SCNLight()
+        ambient.light?.type = .ambient
+        ambient.light?.intensity = 350
+        scene.rootNode.addChildNode(ambient)
