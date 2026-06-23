@@ -43,3 +43,18 @@ struct ChatSheet: View {
             }
         }
     }
+
+    private func bubble(_ message: Message) -> some View {
+        HStack {
+            if message.role == .user { Spacer(minLength: 40) }
+            Text(message.text)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    message.role == .user
+                        ? AnyShapeStyle(Color.accentColor)
+                        : AnyShapeStyle(Color(.secondarySystemBackground)),
+                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                )
+                .foregroundStyle(message.role == .user ? .white : .primary)
+            if message.role == .sona { Spacer(minLength: 40) }
